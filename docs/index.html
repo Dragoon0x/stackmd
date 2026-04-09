@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>stackmd — Full product DNA from any URL</title>
+  <meta name="description" content="Extract brand voice, UX patterns, content strategy, visual design, and technology stack from any live URL into a single STACK.md file.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b; --bg-el: #0f0f13; --bg-s: #141418; --bg-h: #1a1a20;
+      --border: #1e1e28; --border-l: #2a2a38;
+      --text: #e8e4dc; --text-s: #9a9484; --text-m: #5a5448;
+      --accent: #f0b254; --accent-dim: rgba(240,178,84,0.08); --accent-border: rgba(240,178,84,0.22);
+      --red: #f06454; --green: #54d4a0; --blue: #54a4f0; --purple: #a084f0;
+      --mono: 'JetBrains Mono', monospace; --sans: 'DM Sans', -apple-system, sans-serif;
+      --max-w: 860px; --radius: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.7; -webkit-font-smoothing: antialiased; }
+    ::selection { background: var(--accent); color: var(--bg); }
+    a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+    code { font-family: var(--mono); font-size: 0.875em; }
+
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(9,9,11,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); }
+    nav .inner { max-width: var(--max-w); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 24px; }
+    nav .logo { font-family: var(--mono); font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 7px; }
+    nav .logo .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    nav .tag { font-size: 10px; color: var(--text-m); background: var(--bg-s); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border); }
+    nav .links { display: flex; gap: 20px; font-size: 12.5px; }
+    nav .links a { color: var(--text-m); transition: color 0.2s; } nav .links a:hover { color: var(--text); text-decoration: none; }
+
+    main { max-width: var(--max-w); margin: 0 auto; padding: 100px 24px 60px; }
+    section { margin-bottom: 72px; }
+    section h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 2.5px; color: var(--text-m); margin-bottom: 24px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    section h3 { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
+    section p { color: var(--text-s); margin-bottom: 14px; font-size: 14.5px; }
+    section p strong { color: var(--text); font-weight: 500; }
+
+    .hero { margin-bottom: 88px; padding-top: 20px; }
+    .hero h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 800; line-height: 1.15; margin-bottom: 16px; letter-spacing: -0.035em; }
+    .hero h1 .accent { color: var(--accent); }
+    .hero h1 .dim { color: var(--text-m); font-weight: 400; font-size: 0.5em; display: block; margin-top: 6px; letter-spacing: 0; }
+    .hero .sub { font-size: 15px; color: var(--text-s); max-width: 580px; line-height: 1.75; margin-bottom: 32px; }
+    .install-block { background: var(--bg-s); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; font-family: var(--mono); font-size: 13px; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; transition: border-color 0.2s; }
+    .install-block:hover { border-color: var(--accent-border); }
+    .install-block .p { color: var(--text-m); } .install-block .cmd { color: var(--accent); } .install-block .arg { color: var(--text-s); }
+    .install-block .hint { font-size: 10px; color: var(--text-m); font-family: var(--sans); margin-left: 12px; }
+    .install-block.copied .hint { color: var(--accent); }
+
+    .demo { background: var(--bg-s); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 20px 0; }
+    .demo-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--text-m); font-family: var(--mono); }
+    .demo-head .dots { display: flex; gap: 5px; margin-right: 6px; } .demo-head .dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--border-l); }
+    .demo-body { padding: 20px; }
+
+    .tl { font-family: var(--mono); font-size: 12.5px; line-height: 2; white-space: pre; }
+    .tl .p { color: var(--accent); } .tl .d { color: var(--text-m); } .tl .ok { color: var(--green); } .tl .w { color: var(--accent); } .tl .lbl { color: var(--text-s); }
+
+    .vs-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+    .vs-table th { text-align: left; font-weight: 500; color: var(--text-m); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    .vs-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-s); }
+    .vs-table .yes { color: var(--green); } .vs-table .no { color: var(--text-m); }
+
+    .dna-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .dna-card { background: var(--bg-el); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .dna-card .num { font-family: var(--mono); font-size: 10px; color: var(--accent); margin-bottom: 4px; }
+    .dna-card .title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .dna-card .desc { font-size: 11px; color: var(--text-m); line-height: 1.5; }
+
+    .voice-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .voice-meter { margin: 6px 0; display: flex; align-items: center; gap: 10px; }
+    .voice-label { width: 80px; font-size: 11px; color: var(--text-m); font-family: var(--mono); }
+    .voice-track { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .voice-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+    .voice-val { width: 28px; font-size: 11px; font-family: var(--mono); color: var(--text-s); text-align: right; }
+
+    .code-block { background: var(--bg-s); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 14px 0; }
+    .code-head { font-size: 11px; font-family: var(--mono); color: var(--text-m); padding: 8px 14px; border-bottom: 1px solid var(--border); }
+    .code-block pre { padding: 14px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; }
+    .kw { color: var(--purple); } .fn { color: var(--blue); } .str { color: var(--accent); } .cmt { color: var(--text-m); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; font-weight: 500; color: var(--text-m); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-s); }
+    td code { background: var(--bg-s); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: var(--text); border: 1px solid var(--border); }
+
+    .disclaimer { background: var(--bg-s); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; padding: 18px 22px; margin: 20px 0; }
+    .disclaimer h4 { font-size: 12px; color: var(--accent); margin-bottom: 8px; font-weight: 600; }
+    .disclaimer p { font-size: 12.5px; color: var(--text-m); margin-bottom: 6px; } .disclaimer p:last-child { margin-bottom: 0; }
+    .disclaimer ul { list-style: none; } .disclaimer ul li { font-size: 12.5px; color: var(--text-m); padding: 2px 0 2px 14px; position: relative; } .disclaimer ul li::before { content: "·"; position: absolute; left: 3px; }
+
+    footer { max-width: var(--max-w); margin: 0 auto; padding: 28px 24px 44px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 12px; color: var(--text-m); }
+    footer a { color: var(--text-s); }
+
+    .fade-in { opacity: 0; transform: translateY(12px); transition: opacity 0.5s, transform 0.5s; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 640px) { nav .links { display: none; } .dna-grid { grid-template-columns: 1fr; } .voice-demo { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="logo"><span class="dot"></span>stackmd</div>
+      <span class="tag">v0.1.0</span>
+    </div>
+    <div class="links">
+      <a href="#what">What it does</a>
+      <a href="#voice">Voice</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/Dragoon0x/stackmd">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+<div class="hero">
+  <h1>
+    <span class="accent">Full product DNA. One file.</span>
+    <span class="dim">Voice, UX, content, architecture, behavior, performance, tech stack. 36 extraction passes. 200+ data points.</span>
+  </h1>
+  <p class="sub">
+    stackmd crawls any URL and extracts the full product DNA: brand voice, UX patterns, content strategy, visual design, information architecture, component behavior, SEO structure, and technology stack. 36 extraction passes. 200+ data points. 20 structured sections. Everything an AI agent needs to rebuild a product that works, feels, and thinks like the original.
+  </p>
+  <div class="install-block" onclick="copyCmd(this)">
+    <span class="p">$</span>
+    <span><span class="cmd">npx stackmd</span> <span class="arg">https://example.com</span></span>
+    <span class="hint">click to copy</span>
+  </div>
+</div>
+
+<!-- TERMINAL -->
+<section>
+  <h2>What it looks like</h2>
+  <div class="demo">
+    <div class="demo-head"><div class="dots"><span></span><span></span><span></span></div>terminal</div>
+    <div class="demo-body" style="background:#0a0a0d">
+      <div class="tl"><span class="p">$</span> stackmd https://linear.app</div>
+      <div class="tl"></div>
+      <div class="tl">  <strong>stackmd</strong>  <span class="d">· full product DNA extraction</span></div>
+      <div class="tl">  <span class="d">https://linear.app</span></div>
+      <div class="tl"></div>
+      <div class="tl">  <span class="ok">✓</span> <span class="lbl">Extraction complete</span></div>
+      <div class="tl">  <span class="ok">✓</span> STACK.md → ./STACK.md</div>
+      <div class="tl"></div>
+      <div class="tl">  <span class="d">Summary</span></div>
+      <div class="tl">  <span class="d">18 colors · 3 fonts · 5 components · 8 UX patterns</span></div>
+      <div class="tl">  <span class="d">Voice:</span> <span class="lbl">technical, warm, accessible</span> <span class="d">· Page:</span> <span class="lbl">landing</span> <span class="d">· Score:</span> <span class="ok">78/100</span></div>
+      <div class="tl">  <span class="d">Stack: React, Next.js + Tailwind CSS</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 15 SECTIONS -->
+<section id="what" class="fade-in">
+  <h2>20 sections of product DNA · 36 extraction passes</h2>
+  <p>Every STACK.md captures the complete picture. Here's what each section gives an AI agent.</p>
+  <div class="dna-grid">
+    <div class="dna-card"><div class="num">01</div><div class="title">Product Identity</div><div class="desc">Name, tagline, page type, frameworks, personality</div></div>
+    <div class="dna-card"><div class="num">02</div><div class="title">DNA Score</div><div class="desc">0-100 across visual, voice, UX, a11y, SEO, perf</div></div>
+    <div class="dna-card"><div class="num">03</div><div class="title">Brand Voice</div><div class="desc">Personality, reading level, pronouns, CTA style</div></div>
+    <div class="dna-card"><div class="num">04</div><div class="title">Content Strategy</div><div class="desc">Headings, labels, placeholders, microcopy</div></div>
+    <div class="dna-card"><div class="num">05</div><div class="title">Visual Design</div><div class="desc">Colors, type, spacing, depth, gradients, font loading</div></div>
+    <div class="dna-card"><div class="num">06</div><div class="title">Components</div><div class="desc">Buttons, inputs, cards, nav with full CSS</div></div>
+    <div class="dna-card"><div class="num">07</div><div class="title">UX Patterns</div><div class="desc">Hero, CTAs, forms, social proof, pricing</div></div>
+    <div class="dna-card"><div class="num">08</div><div class="title">Architecture</div><div class="desc">Navigation, sections, footer, structure stats</div></div>
+    <div class="dna-card"><div class="num">09</div><div class="title">Behavior</div><div class="desc">Modals, tooltips, validation, hover states</div></div>
+    <div class="dna-card"><div class="num">10</div><div class="title">Motion</div><div class="desc">Durations, easings, keyframes, scroll behavior</div></div>
+    <div class="dna-card"><div class="num">11</div><div class="title">Responsive</div><div class="desc">Breakpoints from @media rules</div></div>
+    <div class="dna-card"><div class="num">12</div><div class="title">Accessibility</div><div class="desc">WCAG contrast, landmarks, ARIA, color matrix</div></div>
+    <div class="dna-card"><div class="num">13</div><div class="title">SEO & Perf</div><div class="desc">Meta, structured data, DOM nodes, lazy loading</div></div>
+    <div class="dna-card"><div class="num">14</div><div class="title">Tech Stack</div><div class="desc">Frameworks, analytics, hosting, third-party</div></div>
+    <div class="dna-card"><div class="num">15</div><div class="title">Icons & Media</div><div class="desc">SVG system, image formats, video, figures</div></div>
+    <div class="dna-card"><div class="num">16</div><div class="title">Layout System</div><div class="desc">Flex/grid patterns, container widths, gaps</div></div>
+    <div class="dna-card"><div class="num">17</div><div class="title">Social Presence</div><div class="desc">Twitter, GitHub, Discord, LinkedIn links</div></div>
+    <div class="dna-card"><div class="num">18</div><div class="title">Structured Data</div><div class="desc">JSON-LD, microdata, OpenGraph, Twitter Cards</div></div>
+    <div class="dna-card"><div class="num">19</div><div class="title">Deep Report</div><div class="desc">Typography, color, layout, forms, media, nav, a11y, perf, content metrics</div></div>
+    <div class="dna-card"><div class="num">20</div><div class="title">Agent Guide</div><div class="desc">Full prompt: identity + visual + voice + UX</div></div>
+  </div>
+</section>
+
+<!-- BRAND VOICE -->
+<section id="voice" class="fade-in">
+  <h2>Brand Voice Analysis</h2>
+  <p>stackmd doesn't just read CSS. It reads the <strong>words</strong>. Every heading, paragraph, CTA, label, and piece of microcopy is analyzed for personality traits, reading level, pronoun strategy, punctuation style, and vocabulary patterns.</p>
+  <div class="demo">
+    <div class="demo-head"><div class="dots"><span></span><span></span><span></span></div>brand voice profile</div>
+    <div class="demo-body">
+      <div class="voice-demo">
+        <div>
+          <div style="font-size:12px;color:var(--text-m);font-family:var(--mono);margin-bottom:12px">tone profile</div>
+          <div class="voice-meter"><span class="voice-label">formality</span><div class="voice-track"><div class="voice-fill" style="width:25%"></div></div><span class="voice-val">25</span></div>
+          <div class="voice-meter"><span class="voice-label">warmth</span><div class="voice-track"><div class="voice-fill" style="width:65%"></div></div><span class="voice-val">65</span></div>
+          <div class="voice-meter"><span class="voice-label">technical</span><div class="voice-track"><div class="voice-fill" style="width:40%"></div></div><span class="voice-val">40</span></div>
+          <div class="voice-meter"><span class="voice-label">urgency</span><div class="voice-track"><div class="voice-fill" style="width:15%"></div></div><span class="voice-val">15</span></div>
+          <div class="voice-meter"><span class="voice-label">playful</span><div class="voice-track"><div class="voice-fill" style="width:10%"></div></div><span class="voice-val">10</span></div>
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--text-m);font-family:var(--mono);margin-bottom:12px">signals</div>
+          <div style="font-size:13px;line-height:2.2">
+            <div><span style="color:var(--text-m)">personality:</span> <span style="color:var(--accent)">warm, technical, accessible</span></div>
+            <div><span style="color:var(--text-m)">reading level:</span> <span style="color:var(--text-s)">standard (12 words/sentence)</span></div>
+            <div><span style="color:var(--text-m)">pronouns:</span> <span style="color:var(--text-s)">balanced (we + you)</span></div>
+            <div><span style="color:var(--text-m)">CTA pattern:</span> <span style="color:var(--text-s)">low-commitment (try/free)</span></div>
+            <div><span style="color:var(--text-m)">punctuation:</span> <span style="color:var(--text-s)">standard</span></div>
+            <div><span style="color:var(--text-m)">density:</span> <span style="color:var(--text-s)">concise</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install" class="fade-in">
+  <h2>Install</h2>
+  <div class="code-block"><div class="code-head">terminal</div><pre>npm install -g stackmd</pre></div>
+  <table style="margin-top:20px">
+    <thead><tr><th>Flag</th><th>Description</th><th>Default</th></tr></thead>
+    <tbody>
+      <tr><td><code>-o, --output</code></td><td>Output file path</td><td><code>./STACK.md</code></td></tr>
+      <tr><td><code>--json</code></td><td>Output raw data as JSON</td><td><code>false</code></td></tr>
+      <tr><td><code>--dark</code></td><td>Extract dark mode tokens</td><td><code>false</code></td></tr>
+      <tr><td><code>--wait &lt;ms&gt;</code></td><td>Wait time for dynamic content</td><td><code>3000</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- API -->
+<section class="fade-in">
+  <h2>Programmatic API</h2>
+  <div class="code-block">
+    <div class="code-head">app.js</div>
+    <pre><span class="kw">import</span> { <span class="fn">stack</span> } <span class="kw">from</span> <span class="str">"stackmd"</span>
+
+<span class="kw">const</span> result = <span class="kw">await</span> <span class="fn">stack</span>(<span class="str">"https://example.com"</span>)
+
+result.data.brandVoice             <span class="cmt">// personality, reading level, CTA patterns</span>
+result.data.uxAnalysis             <span class="cmt">// page type, conversion, navigation</span>
+result.data.designSystem           <span class="cmt">// colors, fonts, spacing, components</span>
+result.data.techStack              <span class="cmt">// React, Next.js, Tailwind, analytics</span>
+result.data.architecture           <span class="cmt">// navLinks, sections, footerLinks</span>
+result.data.behavior               <span class="cmt">// modals, tooltips, validation</span>
+result.data.dnaScore               <span class="cmt">// 0-100 across 10 dimensions</span></pre>
+  </div>
+</section>
+
+<!-- DISCLAIMER -->
+<section class="fade-in">
+  <h2>Disclaimer</h2>
+  <div class="disclaimer">
+    <h4>Educational & Experimental Use Only</h4>
+    <p>This tool is provided strictly for educational and experimental purposes. It reads publicly visible content and computed CSS from rendered web pages, equivalent to what any browser's developer tools expose.</p>
+    <ul>
+      <li>No proprietary code, assets, or non-public information is accessed</li>
+      <li>Extracted data represents publicly visible content and styling</li>
+      <li>No ownership of any product identity or brand is claimed</li>
+      <li>Users are responsible for compliance with applicable terms of service</li>
+      <li>Does not bypass any access controls, authentication, or rate limiting</li>
+      <li>Output should not be used to create confusingly similar products</li>
+    </ul>
+    <p>The author provides this tool as-is with no warranty. Use responsibly.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div>MIT · <a href="https://github.com/Dragoon0x/stackmd">Dragoon0x/stackmd</a></div>
+  <div>For educational and experimental purposes only</div>
+</footer>
+
+<script>
+function copyCmd(el) {
+  navigator.clipboard.writeText("npx stackmd https://example.com");
+  el.classList.add("copied"); el.querySelector(".hint").textContent = "copied!";
+  setTimeout(() => { el.classList.remove("copied"); el.querySelector(".hint").textContent = "click to copy"; }, 2000);
+}
+const obs = new IntersectionObserver((entries) => { for (const e of entries) if (e.isIntersecting) e.target.classList.add("visible"); }, { threshold: 0.15 });
+document.querySelectorAll(".fade-in").forEach(el => obs.observe(el));
+</script>
+
+</body>
+</html>

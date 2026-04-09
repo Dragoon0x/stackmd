@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2026 Dragoon
+Copyright (c) 2026 Dragoon0x
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+ADDITIONAL DISCLAIMER
+
+This tool is provided for educational and experimental purposes only. It reads
+publicly visible content and computed styles from rendered web pages. No
+proprietary code, assets, or non-public information is accessed. No ownership
+of any product identity is claimed. Users are responsible for compliance with
+applicable terms of service and intellectual property laws.

@@ -1,0 +1,6 @@
+node_modules/
+*.md
+!README.md
+.DS_Store
+STACK.*
+!STACK.md

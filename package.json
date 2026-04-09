@@ -1,0 +1,35 @@
+{
+  "name": "stackmd",
+  "version": "0.1.0",
+  "description": "Extract full product DNA from any live URL into a STACK.md file",
+  "type": "module",
+  "bin": {
+    "stackmd": "./bin/stackmd.js"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node bin/stackmd.js",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "design-system",
+    "brand-voice",
+    "ux-analysis",
+    "content-strategy",
+    "product-dna",
+    "ai-agents",
+    "cli"
+  ],
+  "author": "Dragoon0x",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dragoon0x/stackmd"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "ora": "^8.0.1",
+    "puppeteer": "^23.0.0"
+  }
+}
