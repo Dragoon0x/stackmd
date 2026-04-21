@@ -1492,6 +1492,553 @@ export async function extractFromURL(url, options = {}) {
       return r;
     });
 
+
+    // ═══ 37. COOKIE & CONSENT PATTERNS ═══════════════════════════
+    log("Analyzing cookie & consent patterns...");
+    const cookieConsent = await page.evaluate(() => {
+      const r = { bannerFound: false, type: "none", position: "none", buttons: [], darkPattern: false, preChecked: [], categories: [] };
+      try {
+        const keywords = ["cookie", "consent", "gdpr", "privacy", "ccpa"];
+        for (const el of [...document.querySelectorAll("div, section, aside, [role='dialog']")].slice(0, 500)) {
+          const text = (el.textContent || "").toLowerCase().slice(0, 500);
+          const cls = (el.className || "").toLowerCase();
+          if (!keywords.some(k => text.includes(k) || cls.includes(k))) continue;
+          const rect = el.getBoundingClientRect();
+          if (rect.height < 30 || rect.width < 200) continue;
+          r.bannerFound = true;
+          r.position = rect.bottom > window.innerHeight - 200 ? "bottom" : rect.top < 200 ? "top" : "modal";
+          for (const b of el.querySelectorAll("button, a[role='button']")) {
+            const bt = (b.textContent || "").trim().slice(0, 50);
+            if (bt) r.buttons.push(bt);
+          }
+          if (r.buttons.length === 1) r.darkPattern = true;
+          const rejectBtn = r.buttons.find(b => /reject|decline|deny/i.test(b));
+          r.type = rejectBtn ? "compliant" : "accept-only";
+          if (text.includes("analytics")) r.categories.push("analytics");
+          if (text.includes("marketing")) r.categories.push("marketing");
+          break;
+        }
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 38. LOADING & SKELETON PATTERNS ═════════════════════════
+    log("Detecting loading patterns...");
+    const loadingPatterns = await page.evaluate(() => {
+      const r = { spinners: 0, skeletons: 0, shimmer: false, progressBars: 0, lazyImages: 0 };
+      try {
+        r.spinners = document.querySelectorAll("[class*='spinner'], [class*='loader'], .animate-spin").length;
+        r.skeletons = document.querySelectorAll("[class*='skeleton'], [class*='shimmer'], [class*='placeholder']").length;
+        r.progressBars = document.querySelectorAll("[role='progressbar'], progress").length;
+        r.lazyImages = document.querySelectorAll("img[loading='lazy'], img[data-src]").length;
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 39. DATA TABLE PATTERNS ═════════════════════════════════
+    log("Analyzing data tables...");
+    const tablePatterns = await page.evaluate(() => {
+      const r = { tables: [], totalTables: 0, sortable: false, filterable: false, responsive: false, striped: false };
+      try {
+        const tables = document.querySelectorAll("table, [role='grid'], [role='table']");
+        r.totalTables = tables.length;
+        for (const t of [...tables].slice(0, 5)) {
+          r.tables.push({ rows: t.querySelectorAll("tr").length, cols: (t.querySelector("tr")?.children || []).length, hasHeader: !!t.querySelector("thead, th"), caption: t.querySelector("caption")?.textContent?.trim()?.slice(0, 60) || "" });
+          const cls = (t.className || "") + (t.parentElement?.className || "");
+          if (cls.includes("sort") || t.querySelector("[aria-sort]")) r.sortable = true;
+          if (cls.includes("stripe") || cls.includes("zebra")) r.striped = true;
+        }
+        r.responsive = !!document.querySelector("[class*='table-responsive'], [style*='overflow-x']");
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 40. TAB PATTERNS ════════════════════════════════════════
+    log("Detecting tabs...");
+    const tabPatterns = await page.evaluate(() => {
+      const r = { tabGroups: 0, totalTabs: 0, ariaCompliant: false, vertical: false };
+      try {
+        const tabLists = document.querySelectorAll("[role='tablist'], [class*='tabs']");
+        r.tabGroups = tabLists.length;
+        for (const tl of tabLists) {
+          const tabs = tl.querySelectorAll("[role='tab'], [class*='tab-item']");
+          r.totalTabs += tabs.length;
+          if (tabs.length > 0 && tabs[0].getAttribute("role") === "tab") r.ariaCompliant = true;
+          if (getComputedStyle(tl).flexDirection === "column") r.vertical = true;
+        }
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 41. ACCORDION PATTERNS ══════════════════════════════════
+    log("Detecting accordions...");
+    const accordionPatterns = await page.evaluate(() => {
+      const r = { total: 0, nativeDetails: 0, ariaExpanded: 0, multiOpen: false, animated: false };
+      try {
+        r.nativeDetails = document.querySelectorAll("details").length;
+        r.ariaExpanded = document.querySelectorAll("[aria-expanded]").length;
+        r.total = r.nativeDetails + r.ariaExpanded;
+        r.multiOpen = document.querySelectorAll("details[open]").length > 1 || [...document.querySelectorAll("[aria-expanded='true']")].length > 1;
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 42. BREADCRUMB PATTERNS ═════════════════════════════════
+    log("Detecting breadcrumbs...");
+    const breadcrumbPatterns = await page.evaluate(() => {
+      const r = { found: false, levels: 0, separator: "", ariaCompliant: false, structured: false, items: [] };
+      try {
+        const bc = document.querySelector("[aria-label*='breadcrumb' i], [class*='breadcrumb']");
+        if (bc) {
+          r.found = true;
+          r.ariaCompliant = !!bc.getAttribute("aria-label");
+          r.levels = bc.querySelectorAll("a, li").length;
+          for (const l of [...bc.querySelectorAll("a, li")].slice(0, 8)) r.items.push((l.textContent || "").trim().slice(0, 40));
+          const text = bc.textContent || "";
+          r.separator = text.includes("›") ? "›" : text.includes("/") ? "/" : text.includes(">") ? ">" : "unknown";
+        }
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 43. TOAST / NOTIFICATION PATTERNS ═══════════════════════
+    log("Detecting notifications...");
+    const toastPatterns = await page.evaluate(() => {
+      const r = { containers: 0, position: "none", types: [], ariaLive: false };
+      try {
+        const found = document.querySelectorAll("[class*='toast'], [class*='notification'], [class*='snackbar'], [role='alert'], [aria-live]");
+        r.containers = found.length;
+        for (const el of found) {
+          const cls = (el.className || "").toLowerCase();
+          if (cls.includes("success")) r.types.push("success");
+          if (cls.includes("error") || cls.includes("danger")) r.types.push("error");
+          if (cls.includes("warning")) r.types.push("warning");
+          if (el.getAttribute("aria-live")) r.ariaLive = true;
+          const rect = el.getBoundingClientRect();
+          r.position = rect.top < 100 ? "top" : "bottom";
+        }
+        r.types = [...new Set(r.types)];
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 44. TESTIMONIAL PATTERNS ════════════════════════════════
+    log("Detecting testimonials...");
+    const testimonialPatterns = await page.evaluate(() => {
+      const r = { found: 0, hasAvatar: false, hasName: false, hasRole: false, hasCompany: false, hasRating: false, layout: "none", isCarousel: false };
+      try {
+        const els = document.querySelectorAll("[class*='testimonial'], [class*='review'], blockquote, [class*='social-proof']");
+        r.found = els.length;
+        for (const el of [...els].slice(0, 5)) {
+          if (el.querySelector("img[class*='avatar'], [class*='avatar']")) r.hasAvatar = true;
+          if (el.querySelector("[class*='name'], [class*='author'], cite")) r.hasName = true;
+          if (el.querySelector("[class*='role'], [class*='title']")) r.hasRole = true;
+          if (el.querySelector("[class*='company']")) r.hasCompany = true;
+          if (el.querySelector("[class*='rating'], [class*='star']")) r.hasRating = true;
+        }
+        const parent = els[0]?.parentElement;
+        if (parent) {
+          const cs = getComputedStyle(parent);
+          r.layout = cs.display === "grid" ? "grid" : cs.display === "flex" ? "row" : "stack";
+          if (parent.querySelector("[class*='carousel'], [class*='slider']")) r.isCarousel = true;
+        }
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 45. FAQ PATTERNS ════════════════════════════════════════
+    log("Detecting FAQ...");
+    const faqPatterns = await page.evaluate(() => {
+      const r = { found: false, count: 0, type: "none", hasSchema: false, searchable: false };
+      try {
+        const faqs = document.querySelectorAll("[class*='faq'], details, [class*='accordion']");
+        r.count = faqs.length;
+        r.found = r.count > 0;
+        r.type = document.querySelector("details") ? "native-details" : document.querySelector("[aria-expanded]") ? "aria-accordion" : r.found ? "custom" : "none";
+        for (const s of document.querySelectorAll("script[type='application/ld+json']")) {
+          try { if (JSON.parse(s.textContent)["@type"] === "FAQPage") r.hasSchema = true; } catch(e) {}
+        }
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 46. CODE BLOCK PATTERNS ═════════════════════════════════
+    log("Detecting code blocks...");
+    const codeBlockPatterns = await page.evaluate(() => {
+      const r = { found: 0, hasSyntaxHighlighting: false, hasCopyButton: false, hasLineNumbers: false, theme: "unknown", languages: [] };
+      try {
+        const codeEls = document.querySelectorAll("pre code, pre, [class*='highlight'], [class*='prism'], [class*='hljs']");
+        r.found = codeEls.length;
+        for (const el of [...codeEls].slice(0, 5)) {
+          const cls = (el.className || "").toLowerCase();
+          if (cls.includes("hljs") || cls.includes("prism") || cls.includes("shiki")) r.hasSyntaxHighlighting = true;
+          const parent = el.closest("div, figure");
+          if (parent?.querySelector("[class*='copy'], button[aria-label*='copy' i]")) r.hasCopyButton = true;
+          if (parent?.querySelector("[class*='line-number']")) r.hasLineNumbers = true;
+          const langMatch = cls.match(/(?:language-|lang-)(\w+)/);
+          if (langMatch) r.languages.push(langMatch[1]);
+          const cs = getComputedStyle(el);
+          const m = cs.backgroundColor.match(/\d+/g);
+          if (m && parseInt(m[0]) < 50) r.theme = "dark";
+          else if (m && parseInt(m[0]) > 240) r.theme = "light";
+        }
+        r.languages = [...new Set(r.languages)];
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 47. TIMELINE / STEPPER ══════════════════════════════════
+    log("Detecting timelines...");
+    const timelinePatterns = await page.evaluate(() => {
+      const r = { found: false, type: "none", steps: 0, orientation: "none", hasConnectors: false, hasIcons: false, currentStep: 0 };
+      try {
+        const tl = document.querySelector("[class*='timeline'], [class*='stepper'], [class*='wizard']");
+        if (tl) {
+          r.found = true;
+          r.steps = tl.querySelectorAll("[class*='step'], [class*='timeline-item'], li").length;
+          r.orientation = getComputedStyle(tl).flexDirection === "column" ? "vertical" : "horizontal";
+          r.hasConnectors = !!tl.querySelector("[class*='connector'], [class*='line'], hr");
+          r.hasIcons = !!tl.querySelector("svg, [class*='icon']");
+          r.currentStep = tl.querySelectorAll("[class*='active'], [class*='completed']").length;
+          r.type = tl.className.includes("timeline") ? "timeline" : "stepper";
+        }
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 48. CARD VARIANTS ═══════════════════════════════════════
+    log("Analyzing cards...");
+    const cardVariants = await page.evaluate(() => {
+      const r = { total: 0, hasImage: false, hasAction: false, hasBadge: false, hasOverlay: false, layouts: [] };
+      try {
+        const cards = document.querySelectorAll("[class*='card'], article, [class*='tile']");
+        r.total = cards.length;
+        for (const card of [...cards].slice(0, 10)) {
+          r.layouts.push(card.querySelector("img, picture") ? "media" : "text-only");
+          if (card.querySelector("img, picture, video")) r.hasImage = true;
+          if (card.querySelector("button, a[class*='btn']")) r.hasAction = true;
+          if (card.querySelector("[class*='badge'], [class*='tag']")) r.hasBadge = true;
+          if (card.querySelector("[class*='overlay']")) r.hasOverlay = true;
+        }
+        r.layouts = [...new Set(r.layouts)];
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 49. STATUS INDICATORS ═══════════════════════════════════
+    log("Detecting status indicators...");
+    const statusPatterns = await page.evaluate(() => {
+      const r = { badges: 0, dots: 0, labels: 0, colors: [], texts: [] };
+      try {
+        const els = document.querySelectorAll("[class*='badge'], [class*='status'], [class*='label'], [class*='chip'], [class*='pill']");
+        r.badges = els.length;
+        for (const el of [...els].slice(0, 15)) {
+          const cs = getComputedStyle(el);
+          const text = (el.textContent || "").trim().slice(0, 30);
+          if (text) r.texts.push(text);
+          if (cs.backgroundColor !== "rgba(0, 0, 0, 0)") r.colors.push(cs.backgroundColor);
+          if (parseInt(cs.width) < 16 && cs.borderRadius === "50%") r.dots++;
+          else r.labels++;
+        }
+        r.colors = [...new Set(r.colors)].slice(0, 8);
+        r.texts = [...new Set(r.texts)].slice(0, 10);
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 50. PROGRESS INDICATORS ═════════════════════════════════
+    log("Detecting progress...");
+    const progressPatterns = await page.evaluate(() => {
+      const r = { bars: 0, circles: 0, hasLabel: false, hasPercentage: false, animated: false, sizes: [] };
+      try {
+        const bars = document.querySelectorAll("progress, [role='progressbar'], [class*='progress-bar']");
+        r.bars = bars.length;
+        for (const b of bars) {
+          if (b.getAttribute("aria-valuenow")) r.hasPercentage = true;
+          if (b.getAttribute("aria-label")) r.hasLabel = true;
+          r.sizes.push(getComputedStyle(b).height);
+        }
+        r.circles = document.querySelectorAll("[class*='circular-progress'], [class*='donut']").length;
+        r.sizes = [...new Set(r.sizes)];
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 51. BANNER / ALERT PATTERNS ═════════════════════════════
+    log("Detecting banners...");
+    const bannerPatterns = await page.evaluate(() => {
+      const r = { found: 0, types: [], positions: [], dismissible: false, hasIcon: false, hasAction: false };
+      try {
+        const els = document.querySelectorAll("[role='alert'], [class*='banner'], [class*='alert'], [class*='notice'], [class*='callout']");
+        r.found = els.length;
+        for (const el of [...els].slice(0, 5)) {
+          const cls = (el.className || "").toLowerCase();
+          r.types.push(cls.includes("success") ? "success" : cls.includes("error") ? "error" : cls.includes("warning") ? "warning" : "info");
+          r.positions.push(el.getBoundingClientRect().top < 10 ? "top" : "inline");
+          if (el.querySelector("[class*='close'], [class*='dismiss']")) r.dismissible = true;
+          if (el.querySelector("svg, [class*='icon']")) r.hasIcon = true;
+          if (el.querySelector("a, button:not([class*='close'])")) r.hasAction = true;
+        }
+        r.types = [...new Set(r.types)];
+        r.positions = [...new Set(r.positions)];
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 52. PAGINATION ══════════════════════════════════════════
+    log("Detecting pagination...");
+    const paginationPatterns = await page.evaluate(() => {
+      const r = { found: false, type: "none", totalPages: 0, hasEllipsis: false, hasPrevNext: false, ariaCompliant: false };
+      try {
+        const pag = document.querySelector("[class*='pagination'], [role='navigation'][aria-label*='page' i]");
+        if (pag) {
+          r.found = true;
+          r.ariaCompliant = !!pag.getAttribute("aria-label");
+          r.totalPages = [...pag.querySelectorAll("a, button")].filter(l => /^\d+$/.test(l.textContent.trim())).length;
+          r.hasEllipsis = (pag.textContent || "").includes("…");
+          r.hasPrevNext = /prev|next/i.test(pag.textContent || "");
+          r.type = "numbered";
+        }
+        if (!r.found && document.querySelector("button") && [...document.querySelectorAll("button")].some(b => /load more|show more/i.test(b.textContent))) {
+          r.found = true; r.type = "load-more";
+        }
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 53. SEARCH DEEP ═════════════════════════════════════════
+    log("Deep analyzing search...");
+    const searchDeep = await page.evaluate(() => {
+      const r = { found: false, type: "none", hasAutocomplete: false, hasFilters: false, position: "none", placeholder: "", expandable: false };
+      try {
+        const search = document.querySelector("[type='search'], [role='search'], input[placeholder*='search' i]");
+        if (search) {
+          r.found = true;
+          r.placeholder = search.getAttribute("placeholder") || "";
+          r.hasAutocomplete = !!search.getAttribute("aria-autocomplete") || !!search.parentElement?.querySelector("[role='listbox']");
+          const parent = search.closest("form, div, [role='search']");
+          if (parent?.querySelector("[class*='filter'], select")) r.hasFilters = true;
+          r.position = (parent?.getBoundingClientRect()?.top || 999) < 100 ? "header" : "page";
+          r.type = r.hasAutocomplete ? "autocomplete" : "basic";
+        }
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 54. FILTER & SORT ═══════════════════════════════════════
+    log("Detecting filters...");
+    const filterSortPatterns = await page.evaluate(() => {
+      const r = { hasFilters: false, hasSorting: false, filterTypes: [], filterCount: 0, hasReset: false, layout: "none" };
+      try {
+        const filterEls = document.querySelectorAll("[class*='filter'], [class*='facet'], [data-filter]");
+        r.filterCount = filterEls.length;
+        r.hasFilters = r.filterCount > 0;
+        for (const el of filterEls) {
+          if (el.querySelector("select")) r.filterTypes.push("dropdown");
+          if (el.querySelector("input[type='checkbox']")) r.filterTypes.push("checkbox");
+          if (el.querySelector("input[type='range']")) r.filterTypes.push("range");
+        }
+        r.filterTypes = [...new Set(r.filterTypes)];
+        r.hasSorting = document.querySelectorAll("[class*='sort'], [aria-sort]").length > 0;
+        r.layout = document.querySelector("aside[class*='filter']") ? "sidebar" : r.hasFilters ? "inline" : "none";
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 55. SIDEBAR ═════════════════════════════════════════════
+    log("Analyzing sidebar...");
+    const sidebarPatterns = await page.evaluate(() => {
+      const r = { found: false, side: "none", width: "0", collapsible: false, hasNav: false, sticky: false };
+      try {
+        const sidebar = document.querySelector("aside, [class*='sidebar'], [class*='side-nav']");
+        if (sidebar) {
+          r.found = true;
+          const cs = getComputedStyle(sidebar);
+          r.width = cs.width;
+          r.side = sidebar.getBoundingClientRect().left < window.innerWidth / 2 ? "left" : "right";
+          r.sticky = cs.position === "sticky" || cs.position === "fixed";
+          r.hasNav = !!sidebar.querySelector("nav, a");
+          r.collapsible = !!sidebar.querySelector("[class*='toggle'], [aria-expanded]");
+        }
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 56. EMPTY STATES ════════════════════════════════════════
+    log("Detecting empty states...");
+    const emptyStatePatterns = await page.evaluate(() => {
+      const r = { found: 0, hasIllustration: false, hasAction: false, messages: [] };
+      try {
+        const els = document.querySelectorAll("[class*='empty-state'], [class*='no-data'], [class*='no-results'], [class*='blank-slate']");
+        r.found = els.length;
+        for (const el of els) {
+          if (el.querySelector("img, svg")) r.hasIllustration = true;
+          if (el.querySelector("button, a[class*='btn']")) r.hasAction = true;
+          r.messages.push((el.textContent || "").trim().slice(0, 100));
+        }
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 57. AVATAR PATTERNS ═════════════════════════════════════
+    log("Detecting avatars...");
+    const avatarPatterns = await page.evaluate(() => {
+      const r = { found: 0, shapes: [], sizes: [], hasInitials: false, hasStatus: false, groups: 0 };
+      try {
+        const els = document.querySelectorAll("[class*='avatar'], [class*='profile-pic']");
+        r.found = els.length;
+        for (const el of [...els].slice(0, 10)) {
+          const cs = getComputedStyle(el);
+          r.shapes.push(cs.borderRadius === "50%" || parseInt(cs.borderRadius) > 40 ? "circle" : "rounded");
+          r.sizes.push(cs.width);
+          if (!el.querySelector("img") && el.textContent.trim().length <= 3) r.hasInitials = true;
+          if (el.querySelector("[class*='status'], [class*='online']")) r.hasStatus = true;
+        }
+        r.shapes = [...new Set(r.shapes)];
+        r.sizes = [...new Set(r.sizes)].sort();
+        r.groups = document.querySelectorAll("[class*='avatar-group']").length;
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 58. PWA CAPABILITIES ════════════════════════════════════
+    log("Detecting PWA...");
+    const pwaCapabilities = await page.evaluate(() => {
+      const r = { hasManifest: false, hasServiceWorker: false, isInstallable: false, themeColor: "", icons: 0 };
+      try {
+        r.hasManifest = !!document.querySelector("link[rel='manifest']");
+        r.themeColor = document.querySelector("meta[name='theme-color']")?.content || "";
+        r.hasServiceWorker = !!navigator.serviceWorker?.controller;
+        r.isInstallable = r.hasManifest || !!document.querySelector("meta[name='mobile-web-app-capable']");
+        r.icons = document.querySelectorAll("link[rel='icon'], link[rel='apple-touch-icon']").length;
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 59. STORAGE PATTERNS ════════════════════════════════════
+    log("Analyzing storage...");
+    const storagePatterns = await page.evaluate(() => {
+      const r = { localStorage: { keys: 0, keyNames: [] }, sessionStorage: { keys: 0 }, cookies: { count: 0, names: [] } };
+      try {
+        r.localStorage.keys = localStorage.length;
+        for (let i = 0; i < Math.min(localStorage.length, 20); i++) r.localStorage.keyNames.push(localStorage.key(i));
+        r.sessionStorage.keys = sessionStorage.length;
+        r.cookies.count = document.cookie.split(";").filter(c => c.trim()).length;
+        r.cookies.names = document.cookie.split(";").slice(0, 15).map(c => c.split("=")[0].trim()).filter(Boolean);
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 60. SECURITY SIGNALS ════════════════════════════════════
+    log("Detecting security...");
+    const securitySignals = await page.evaluate(() => {
+      const r = { https: false, mixedContent: false, csp: false, sri: 0, noopener: 0, formSecurity: { csrf: false } };
+      try {
+        r.https = location.protocol === "https:";
+        for (const s of document.querySelectorAll("script[src]")) {
+          if (s.src.startsWith("http://")) r.mixedContent = true;
+          if (s.integrity) r.sri++;
+        }
+        for (const l of document.querySelectorAll("a[target='_blank']")) {
+          if (l.rel?.includes("noopener")) r.noopener++;
+        }
+        for (const f of document.querySelectorAll("form")) {
+          if (f.querySelector("input[name*='csrf'], input[name*='token']")) r.formSecurity.csrf = true;
+        }
+        r.csp = !!document.querySelector("meta[http-equiv='Content-Security-Policy']");
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 61. ABOVE-THE-FOLD ══════════════════════════════════════
+    log("Analyzing above-the-fold...");
+    const aboveFold = await page.evaluate(() => {
+      const r = { elements: 0, images: 0, ctaCount: 0, textBlocks: 0, primaryCTA: "", headline: "", hasHero: false, loadingBlocked: 0 };
+      try {
+        const viewH = window.innerHeight;
+        for (const el of document.querySelectorAll("*")) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top >= viewH || rect.height <= 0 || rect.bottom <= 0) continue;
+          r.elements++;
+          const tag = el.tagName.toLowerCase();
+          if (tag === "img" || tag === "picture") r.images++;
+          if ((tag === "a" || tag === "button") && el.textContent.trim().length < 40) {
+            const cls = (el.className || "").toLowerCase();
+            if (cls.includes("btn") || cls.includes("cta") || tag === "button") { r.ctaCount++; if (!r.primaryCTA) r.primaryCTA = el.textContent.trim().slice(0, 40); }
+          }
+          if (/^h[1-3]$/.test(tag) && !r.headline) r.headline = el.textContent.trim().slice(0, 100);
+          if (tag === "p") r.textBlocks++;
+        }
+        r.hasHero = !!document.querySelector("[class*='hero'], [class*='banner'], [class*='jumbotron']");
+        r.loadingBlocked = document.querySelectorAll("link[rel='stylesheet']:not([media='print']), script:not([async]):not([defer]):not([type='module'])").length;
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 62. I18N SIGNALS ════════════════════════════════════════
+    log("Detecting i18n...");
+    const i18nSignals = await page.evaluate(() => {
+      const r = { lang: "", dir: "", hasLangSwitcher: false, alternateLanguages: [], hasHreflang: false, rtlSupport: false };
+      try {
+        r.lang = document.documentElement.lang || "";
+        r.dir = document.documentElement.dir || "ltr";
+        r.rtlSupport = r.dir === "rtl";
+        r.hasLangSwitcher = !!document.querySelector("[class*='lang-switch'], [class*='language-select'], [aria-label*='language' i]");
+        const hreflangs = document.querySelectorAll("link[hreflang]");
+        r.hasHreflang = hreflangs.length > 0;
+        for (const h of hreflangs) r.alternateLanguages.push(h.getAttribute("hreflang"));
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 63. WHITESPACE RHYTHM ═══════════════════════════════════
+    log("Analyzing whitespace...");
+    const whitespaceRhythm = await page.evaluate(() => {
+      const r = { sectionGaps: [], baseUnit: 0, consistency: 0, verticalRhythm: false };
+      try {
+        const gaps = [];
+        for (const s of document.querySelectorAll("section, [class*='section'], main > div")) {
+          const cs = getComputedStyle(s);
+          for (const v of [parseInt(cs.paddingTop), parseInt(cs.paddingBottom), parseInt(cs.marginTop), parseInt(cs.marginBottom)]) {
+            if (v > 0) gaps.push(v);
+          }
+        }
+        r.sectionGaps = [...new Set(gaps)].sort((a, b) => a - b).slice(0, 8);
+        const gcd = (a, b) => b ? gcd(b, a % b) : a;
+        if (gaps.length > 2) {
+          r.baseUnit = gaps.reduce(gcd);
+          if (r.baseUnit < 2) r.baseUnit = 4;
+          r.consistency = Math.round((gaps.filter(g => g % r.baseUnit === 0).length / gaps.length) * 100);
+          r.verticalRhythm = r.consistency > 70;
+        }
+      } catch(e) {}
+      return r;
+    });
+
+    // ═══ 64. MICRO-INTERACTIONS ══════════════════════════════════
+    log("Inventorying micro-interactions...");
+    const microInteractions = await page.evaluate(() => {
+      const r = { hoverEffects: 0, focusRings: 0, activeStates: 0, scrollAnimations: 0, transitionElements: 0, cursorChanges: [], transforms: 0 };
+      try {
+        for (const el of [...document.querySelectorAll("a, button, input, [role='button']")].slice(0, 50)) {
+          const cs = getComputedStyle(el);
+          if (cs.transition && !cs.transition.includes("0s ease 0s")) r.transitionElements++;
+          if (cs.cursor !== "auto" && cs.cursor !== "default") r.cursorChanges.push(cs.cursor);
+          if (cs.transform !== "none") r.transforms++;
+        }
+        r.cursorChanges = [...new Set(r.cursorChanges)];
+        const styles = [...document.styleSheets].flatMap(s => { try { return [...s.cssRules]; } catch(e) { return []; } });
+        for (const rule of styles) {
+          const sel = rule.selectorText || "";
+          if (sel.includes(":hover")) r.hoverEffects++;
+          if (sel.includes(":focus")) r.focusRings++;
+          if (sel.includes(":active")) r.activeStates++;
+        }
+        r.scrollAnimations = document.querySelectorAll("[data-aos], [class*='animate-on-scroll'], [class*='fade-in']").length;
+      } catch(e) {}
+      return r;
+    });
+
     log("Capturing screenshot...");
     const screenshot = await page.screenshot({ encoding: "base64", fullPage: false });
 
@@ -1504,6 +2051,13 @@ export async function extractFromURL(url, options = {}) {
       scrollPatterns, thirdPartyServices, schemaData, colorMatrix,
       typographyDeep, colorContext, layoutDeep, interactionPatterns,
       formDeep, mediaDeep, navDeep, a11yDeep, perfDeep, contentMetrics,
+      cookieConsent, loadingPatterns, tablePatterns, tabPatterns,
+      accordionPatterns, breadcrumbPatterns, toastPatterns, testimonialPatterns,
+      faqPatterns, codeBlockPatterns, timelinePatterns, cardVariants,
+      statusPatterns, progressPatterns, bannerPatterns, paginationPatterns,
+      searchDeep, filterSortPatterns, sidebarPatterns, emptyStatePatterns,
+      avatarPatterns, pwaCapabilities, storagePatterns, securitySignals,
+      aboveFold, i18nSignals, whitespaceRhythm, microInteractions,
       screenshot,
     };
   } finally {

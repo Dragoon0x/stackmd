@@ -4,6 +4,8 @@
 
 import { analyze } from "./src/analyzer.js";
 import { generateStackMd } from "./src/generator.js";
+import { compare as compareFunc, generateComparisonMd } from "./src/comparator.js";
+import { generateHTMLReport } from "./src/reporter.js";
 
 let passed = 0, failed = 0;
 function test(name, fn) { try { fn(); console.log(`  ✓ ${name}`); passed++; } catch (e) { console.log(`  ✗ ${name}`); console.log(`    ${e.message}`); failed++; } }
@@ -657,6 +659,260 @@ test("no XSS via schema type", () => {
 test("educational disclaimer present", () => {
   const m = generateStackMd(data);
   assert(m.includes("educational"), "missing disclaimer");
+});
+
+// ── NEW: V2 Extraction Pass Tests ────────────────────────────
+
+// Add v2 mock data to the mock object for testing
+const v2Mock = {
+  ...mock,
+  cookieConsent: { bannerFound: true, type: "compliant", position: "bottom", buttons: ["Accept", "Reject"], darkPattern: false, preChecked: [], categories: ["necessary", "analytics"] },
+  loadingPatterns: { spinners: 2, skeletons: 3, shimmer: true, progressBars: 1, lazyImages: 5, placeholders: 2, suspenseBoundaries: 0 },
+  tablePatterns: { tables: [{ rows: 10, cols: 4, hasHeader: true, hasFooter: false, caption: "Pricing" }], totalTables: 1, sortable: true, filterable: false, paginated: false, responsive: true, striped: true, hoverable: true },
+  tabPatterns: { tabGroups: 2, totalTabs: 6, ariaCompliant: true, vertical: false, variants: [] },
+  accordionPatterns: { total: 5, nativeDetails: 3, ariaExpanded: 2, multiOpen: false, animated: true },
+  breadcrumbPatterns: { found: true, levels: 3, separator: "›", ariaCompliant: true, structured: true, items: ["Home", "Products", "Widget"] },
+  toastPatterns: { containers: 1, position: "top", types: ["success", "error"], ariaLive: true, autoClose: false },
+  avatarPatterns: { found: 4, shapes: ["circle"], sizes: ["32px", "40px"], hasInitials: true, hasStatus: true, groups: 1 },
+  emptyStatePatterns: { found: 1, hasIllustration: true, hasAction: true, messages: ["No items yet"] },
+  paginationPatterns: { found: true, type: "numbered", totalPages: 5, hasEllipsis: true, hasPrevNext: true, hasFirstLast: false, ariaCompliant: true },
+  searchDeep: { found: true, type: "autocomplete", hasAutocomplete: true, hasFilters: true, hasVoice: false, position: "header", placeholder: "Search docs...", icon: "svg", expandable: false },
+  filterSortPatterns: { hasFilters: true, hasSorting: true, filterTypes: ["dropdown", "checkbox"], filterCount: 3, activeFilters: 1, hasReset: true, layout: "sidebar" },
+  sidebarPatterns: { found: true, side: "left", width: "260px", collapsible: true, hasNav: true, sticky: true, overlay: false },
+  testimonialPatterns: { found: 3, hasAvatar: true, hasName: true, hasRole: true, hasCompany: true, hasRating: false, layout: "grid", isCarousel: false },
+  faqPatterns: { found: true, count: 8, type: "native-details", hasSchema: true, searchable: false, categorized: false },
+  codeBlockPatterns: { found: 4, hasSyntaxHighlighting: true, hasCopyButton: true, hasLineNumbers: true, hasLanguageLabel: true, theme: "dark", languages: ["javascript", "python"] },
+  timelinePatterns: { found: true, type: "stepper", steps: 4, orientation: "horizontal", hasConnectors: true, hasIcons: true, currentStep: 2 },
+  cardVariants: { total: 6, variants: [], hasImage: true, hasAction: true, hasBadge: true, hasOverlay: false, layouts: ["media", "text-only"] },
+  statusPatterns: { badges: 5, dots: 2, labels: 3, colors: ["rgb(34, 197, 94)", "rgb(239, 68, 68)"], texts: ["Active", "Pending", "Closed"] },
+  progressPatterns: { bars: 2, circles: 1, hasLabel: true, hasPercentage: true, animated: true, sizes: ["8px", "4px"] },
+  bannerPatterns: { found: 2, types: ["info", "warning"], positions: ["top", "inline"], dismissible: true, hasIcon: true, hasAction: true },
+  pwaCapabilities: { hasManifest: true, hasServiceWorker: true, isInstallable: true, themeColor: "#5e6ad2", backgroundColor: "", display: "", icons: 3, startUrl: "" },
+  storagePatterns: { localStorage: { keys: 5, totalSize: 2048, keyNames: ["theme", "lang", "session", "prefs", "cache"] }, sessionStorage: { keys: 2 }, cookies: { count: 3, httpOnly: false, sameSite: false, names: ["_ga", "_gid", "consent"] }, indexedDB: [] },
+  securitySignals: { https: true, mixedContent: false, csp: true, xfo: false, hsts: false, sri: 3, nonces: 0, noopener: 12, formSecurity: { autocompleteOff: 0, csrf: true } },
+  aboveFold: { elements: 45, images: 2, ctaCount: 2, textBlocks: 8, primaryCTA: "Get Started Free", headline: "Build better products faster", hasHero: true, loadingBlocked: 3 },
+  i18nSignals: { lang: "en", dir: "ltr", hasLangSwitcher: true, alternateLanguages: ["en", "es", "fr", "de"], hasHreflang: true, unicodeRange: false, rtlSupport: false },
+  whitespaceRhythm: { sectionGaps: [16, 24, 32, 48, 64], componentGaps: [], baseUnit: 8, consistency: 85, verticalRhythm: true },
+  microInteractions: { hoverEffects: 25, focusRings: 12, activeStates: 8, scrollAnimations: 4, transitionElements: 18, cursorChanges: ["pointer"], transforms: 3 },
+};
+
+test("v2 mock data passes through analyzer without error", () => {
+  const r = analyze(v2Mock);
+  assert(r.cookieConsent, "cookieConsent missing");
+  assert(r.loadingPatterns, "loadingPatterns missing");
+  assert(r.tablePatterns, "tablePatterns missing");
+  assert(r.tabPatterns, "tabPatterns missing");
+  assert(r.accordionPatterns, "accordionPatterns missing");
+  assert(r.breadcrumbPatterns, "breadcrumbPatterns missing");
+  assert(r.toastPatterns, "toastPatterns missing");
+  assert(r.avatarPatterns, "avatarPatterns missing");
+  assert(r.emptyStatePatterns, "emptyStatePatterns missing");
+  assert(r.paginationPatterns, "paginationPatterns missing");
+  assert(r.searchDeep, "searchDeep missing");
+  assert(r.filterSortPatterns, "filterSortPatterns missing");
+  assert(r.sidebarPatterns, "sidebarPatterns missing");
+  assert(r.testimonialPatterns, "testimonialPatterns missing");
+  assert(r.faqPatterns, "faqPatterns missing");
+  assert(r.codeBlockPatterns, "codeBlockPatterns missing");
+  assert(r.timelinePatterns, "timelinePatterns missing");
+  assert(r.cardVariants, "cardVariants missing");
+  assert(r.statusPatterns, "statusPatterns missing");
+  assert(r.progressPatterns, "progressPatterns missing");
+  assert(r.bannerPatterns, "bannerPatterns missing");
+  assert(r.pwaCapabilities, "pwaCapabilities missing");
+  assert(r.storagePatterns, "storagePatterns missing");
+  assert(r.securitySignals, "securitySignals missing");
+  assert(r.aboveFold, "aboveFold missing");
+  assert(r.i18nSignals, "i18nSignals missing");
+  assert(r.whitespaceRhythm, "whitespaceRhythm missing");
+  assert(r.microInteractions, "microInteractions missing");
+});
+
+const v2Data = analyze(v2Mock);
+
+test("v2 generator includes new sections", () => {
+  const m = generateStackMd(v2Data);
+  assert(m.includes("Cookie & Consent"), "missing cookie section");
+  assert(m.includes("UI Component Patterns"), "missing UI patterns section");
+  assert(m.includes("Data Display"), "missing data display section");
+  assert(m.includes("Loading & State"), "missing loading section");
+  assert(m.includes("Search & Filtering"), "missing search section");
+  assert(m.includes("Social Proof"), "missing social proof section");
+  assert(m.includes("Code Display"), "missing code display section");
+  assert(m.includes("Security & PWA"), "missing security section");
+  assert(m.includes("Above the Fold"), "missing above fold section");
+  assert(m.includes("Intelligence Report"), "missing intelligence report section");
+});
+
+// ── NEW: Intelligence Engine Tests ───────────────────────────
+
+test("CRO audit produces grade", () => {
+  const intel = v2Data.intelligence;
+  assert(intel.croAudit, "croAudit missing");
+  assert(typeof intel.croAudit.score === "number", "croAudit score not number");
+  assert(["A", "B", "C", "D"].includes(intel.croAudit.grade), "invalid CRO grade");
+});
+
+test("mobile UX assessment produces grade", () => {
+  const intel = v2Data.intelligence;
+  assert(intel.mobileUX, "mobileUX missing");
+  assert(typeof intel.mobileUX.score === "number", "mobileUX score not number");
+  assert(["A", "B", "C", "D"].includes(intel.mobileUX.grade), "invalid mobile grade");
+});
+
+test("design system maturity scoring", () => {
+  const intel = v2Data.intelligence;
+  assert(intel.designSystemMaturity, "designSystemMaturity missing");
+  assert(typeof intel.designSystemMaturity.score === "number", "dsm score not number");
+  assert(["Mature", "Growing", "Emerging", "Ad-hoc"].includes(intel.designSystemMaturity.level), "invalid dsm level");
+  assert(intel.designSystemMaturity.signals.length > 0, "dsm has no signals");
+});
+
+test("brand consistency analysis", () => {
+  const intel = v2Data.intelligence;
+  assert(intel.brandConsistency, "brandConsistency missing");
+  assert(typeof intel.brandConsistency.score === "number", "brand score not number");
+  assert(["A", "B", "C", "D"].includes(intel.brandConsistency.grade), "invalid brand grade");
+});
+
+test("information hierarchy assessment", () => {
+  const intel = v2Data.intelligence;
+  assert(intel.infoHierarchy, "infoHierarchy missing");
+  assert(typeof intel.infoHierarchy.score === "number", "hierarchy score not number");
+});
+
+test("PLG pattern detection", () => {
+  const intel = v2Data.intelligence;
+  assert(intel.plgPatterns, "plgPatterns missing");
+  assert(typeof intel.plgPatterns.score === "number", "plg score not number");
+  assert(["Strong PLG", "PLG-leaning", "Hybrid", "Sales-led"].includes(intel.plgPatterns.motion), "invalid plg motion");
+  assert(intel.plgPatterns.signals.length > 0, "plg has no signals");
+});
+
+test("enterprise readiness assessment", () => {
+  const intel = v2Data.intelligence;
+  assert(intel.enterpriseReadiness, "enterpriseReadiness missing");
+  assert(typeof intel.enterpriseReadiness.score === "number", "ent score not number");
+  assert(["Enterprise-ready", "Growth-stage", "Early-stage", "Consumer-focused"].includes(intel.enterpriseReadiness.level), "invalid ent level");
+});
+
+test("design trend detection", () => {
+  const intel = v2Data.intelligence;
+  assert(intel.designTrends, "designTrends missing");
+  assert(typeof intel.designTrends.count === "number", "trends count not number");
+});
+
+// ── NEW: Comparator Tests ────────────────────────────────────
+
+
+test("comparator produces valid report", () => {
+  const report = compareFunc(v2Data, data);
+  assert(report.urlA, "missing urlA");
+  assert(report.urlB, "missing urlB");
+  assert(report.sections.length > 0, "no sections in comparison");
+});
+
+test("comparison markdown generates without error", () => {
+  const report = compareFunc(v2Data, data);
+  const md = generateComparisonMd(report);
+  assert(md.includes("Product DNA Comparison"), "missing comparison title");
+  assert(md.includes("DNA Score"), "missing score comparison");
+  assert(md.includes("Technology Stack"), "missing tech comparison");
+});
+
+// ── NEW: Reporter Tests ──────────────────────────────────────
+
+
+test("HTML report generates valid HTML", () => {
+  const html = generateHTMLReport(v2Data);
+  assert(html.includes("<!DOCTYPE html>"), "missing doctype");
+  assert(html.includes("</html>"), "missing closing html");
+  assert(html.includes("stackmd"), "missing stackmd reference");
+  assert(html.includes("DNA Score"), "missing DNA score section");
+  assert(html.includes("Intelligence"), "missing intelligence section");
+});
+
+test("HTML report sanitizes output", () => {
+  const xssMock = { ...v2Mock, identity: { ...v2Mock.identity, title: '<script>alert(1)</script> Test' } };
+  const xssData = analyze(xssMock);
+  const html = generateHTMLReport(xssData);
+  assert(!html.includes("<script>alert"), "XSS in HTML report");
+});
+
+// ── NEW: XSS tests for v2 data ───────────────────────────────
+
+test("no XSS via cookie consent buttons", () => {
+  const xss = { ...v2Mock, cookieConsent: { ...v2Mock.cookieConsent, buttons: ['<img onerror=alert(1)>'] } };
+  const r = analyze(xss);
+  const m = generateStackMd(r);
+  assert(!m.includes("onerror"), "XSS via cookie button");
+});
+
+test("no XSS via search placeholder", () => {
+  const xss = { ...v2Mock, searchDeep: { ...v2Mock.searchDeep, placeholder: '<script>alert(1)</script>' } };
+  const r = analyze(xss);
+  const m = generateStackMd(r);
+  assert(!m.includes("<script>"), "XSS via search placeholder");
+});
+
+test("no XSS via above-fold headline", () => {
+  const xss = { ...v2Mock, aboveFold: { ...v2Mock.aboveFold, headline: 'javascript:alert(1)' } };
+  const r = analyze(xss);
+  const m = generateStackMd(r);
+  assert(!m.includes("javascript:"), "XSS via headline");
+});
+
+test("no XSS via breadcrumb items", () => {
+  const xss = { ...v2Mock, breadcrumbPatterns: { ...v2Mock.breadcrumbPatterns, items: ['<img onerror=alert(1)>'] } };
+  const r = analyze(xss);
+  const m = generateStackMd(r);
+  assert(!m.includes("onerror"), "XSS via breadcrumb");
+});
+
+// ── NEW: Edge case tests ─────────────────────────────────────
+
+test("v2 data with all nulls doesn't crash", () => {
+  const nullMock = { ...mock };
+  // All v2 fields null
+  for (const k of ["cookieConsent", "loadingPatterns", "tablePatterns", "tabPatterns", "accordionPatterns",
+    "breadcrumbPatterns", "toastPatterns", "avatarPatterns", "emptyStatePatterns", "paginationPatterns",
+    "searchDeep", "filterSortPatterns", "sidebarPatterns", "testimonialPatterns", "faqPatterns",
+    "codeBlockPatterns", "timelinePatterns", "cardVariants", "statusPatterns", "progressPatterns",
+    "bannerPatterns", "pwaCapabilities", "storagePatterns", "securitySignals", "aboveFold",
+    "i18nSignals", "whitespaceRhythm", "microInteractions"]) {
+    nullMock[k] = null;
+  }
+  const r = analyze(nullMock);
+  const m = generateStackMd(r);
+  assert(typeof m === "string", "generator failed with null v2 data");
+  assert(m.length > 1000, "generator output too short with null v2 data");
+});
+
+test("v2 data with empty objects doesn't crash", () => {
+  const emptyMock = { ...mock };
+  for (const k of ["cookieConsent", "loadingPatterns", "tablePatterns", "tabPatterns", "accordionPatterns",
+    "breadcrumbPatterns", "toastPatterns", "avatarPatterns", "emptyStatePatterns", "paginationPatterns",
+    "searchDeep", "filterSortPatterns", "sidebarPatterns", "testimonialPatterns", "faqPatterns",
+    "codeBlockPatterns", "timelinePatterns", "cardVariants", "statusPatterns", "progressPatterns",
+    "bannerPatterns", "pwaCapabilities", "storagePatterns", "securitySignals", "aboveFold",
+    "i18nSignals", "whitespaceRhythm", "microInteractions"]) {
+    emptyMock[k] = {};
+  }
+  const r = analyze(emptyMock);
+  const m = generateStackMd(r);
+  assert(typeof m === "string", "generator failed with empty v2 data");
+});
+
+test("intelligence engines don't crash with minimal data", () => {
+  const minimalData = analyze(mock);
+  const intel = minimalData.intelligence;
+  assert(intel.croAudit, "croAudit missing with minimal data");
+  assert(intel.mobileUX, "mobileUX missing with minimal data");
+  assert(intel.designSystemMaturity, "dsm missing with minimal data");
+  assert(intel.brandConsistency, "brand missing with minimal data");
+  assert(intel.plgPatterns, "plg missing with minimal data");
+  assert(intel.enterpriseReadiness, "ent missing with minimal data");
+  assert(intel.designTrends, "trends missing with minimal data");
 });
 
 // ── Summary ──────────────────────────────────────────────────

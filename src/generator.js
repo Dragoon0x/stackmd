@@ -1046,6 +1046,314 @@ export function generateStackMd(data) {
   ln("```");
   ln();
 
+  // ═══ SECTION 21: COOKIE & CONSENT ═════════════════════════════
+  const cookie = data.cookieConsent || {};
+  if (cookie.bannerFound) {
+    ln("## 21. Cookie & Consent");
+    ln();
+    ln(`- Banner position: ${cookie.position}`);
+    ln(`- Type: ${cookie.type}`);
+    ln(`- Buttons: ${cookie.buttons.map(b => esc(b)).join(", ") || "none"}`);
+    if (cookie.categories.length) ln(`- Categories: ${cookie.categories.join(", ")}`);
+    if (cookie.darkPattern) ln(`- ⚠️ Dark pattern detected: missing reject/decline option`);
+    if (cookie.preChecked.length) ln(`- Pre-checked categories: ${cookie.preChecked.join(", ")}`);
+    ln();
+  }
+
+  // ═══ SECTION 22: UI COMPONENT PATTERNS ════════════════════════
+  const hasUIPatterns = (data.tabPatterns?.tabGroups > 0) || (data.accordionPatterns?.total > 0) ||
+    (data.breadcrumbPatterns?.found) || (data.paginationPatterns?.found) || (data.timelinePatterns?.found);
+  if (hasUIPatterns) {
+    ln("## 22. UI Component Patterns");
+    ln();
+    const tabs = data.tabPatterns || {};
+    if (tabs.tabGroups > 0) {
+      ln(`### Tabs`);
+      ln(`- Groups: ${tabs.tabGroups}, Total tabs: ${tabs.totalTabs}`);
+      ln(`- ARIA compliant: ${tabs.ariaCompliant ? "yes" : "no"}`);
+      if (tabs.vertical) ln(`- Orientation: vertical`);
+      ln();
+    }
+    const acc = data.accordionPatterns || {};
+    if (acc.total > 0) {
+      ln(`### Accordions`);
+      ln(`- Total: ${acc.total} (native details: ${acc.nativeDetails}, aria-expanded: ${acc.ariaExpanded})`);
+      ln(`- Multi-open: ${acc.multiOpen ? "yes" : "no"}, Animated: ${acc.animated ? "yes" : "no"}`);
+      ln();
+    }
+    const bc = data.breadcrumbPatterns || {};
+    if (bc.found) {
+      ln(`### Breadcrumbs`);
+      ln(`- Levels: ${bc.levels}, Separator: \`${bc.separator}\``);
+      ln(`- ARIA compliant: ${bc.ariaCompliant ? "yes" : "no"}, Structured data: ${bc.structured ? "yes" : "no"}`);
+      ln();
+    }
+    const pag = data.paginationPatterns || {};
+    if (pag.found) {
+      ln(`### Pagination`);
+      ln(`- Type: ${pag.type}`);
+      if (pag.totalPages) ln(`- Visible pages: ${pag.totalPages}`);
+      ln(`- Prev/Next: ${pag.hasPrevNext ? "yes" : "no"}, Ellipsis: ${pag.hasEllipsis ? "yes" : "no"}`);
+      ln();
+    }
+    const tl = data.timelinePatterns || {};
+    if (tl.found) {
+      ln(`### Timeline / Stepper`);
+      ln(`- Type: ${tl.type}, Steps: ${tl.steps}, Orientation: ${tl.orientation}`);
+      ln(`- Connectors: ${tl.hasConnectors ? "yes" : "no"}, Icons: ${tl.hasIcons ? "yes" : "no"}`);
+      ln();
+    }
+  }
+
+  // ═══ SECTION 23: DATA DISPLAY ═════════════════════════════════
+  const tables = data.tablePatterns || {};
+  const cards = data.cardVariants || {};
+  if (tables.totalTables > 0 || cards.total > 0) {
+    ln("## 23. Data Display Patterns");
+    ln();
+    if (tables.totalTables > 0) {
+      ln(`### Tables`);
+      ln(`- Total: ${tables.totalTables}`);
+      ln(`- Sortable: ${tables.sortable ? "yes" : "no"}, Filterable: ${tables.filterable ? "yes" : "no"}`);
+      ln(`- Responsive: ${tables.responsive ? "yes" : "no"}, Striped: ${tables.striped ? "yes" : "no"}`);
+      for (const t of tables.tables.slice(0, 3)) {
+        ln(`- Table: ${t.rows} rows × ${t.cols} cols, header: ${t.hasHeader ? "yes" : "no"}${t.caption ? `, caption: "${esc(t.caption)}"` : ""}`);
+      }
+      ln();
+    }
+    if (cards.total > 0) {
+      ln(`### Cards`);
+      ln(`- Total: ${cards.total}, Layouts: ${cards.layouts.join(", ")}`);
+      ln(`- Has image: ${cards.hasImage ? "yes" : "no"}, Has action: ${cards.hasAction ? "yes" : "no"}`);
+      ln(`- Has badge: ${cards.hasBadge ? "yes" : "no"}, Has overlay: ${cards.hasOverlay ? "yes" : "no"}`);
+      ln();
+    }
+  }
+
+  // ═══ SECTION 24: LOADING & ERROR STATES ═══════════════════════
+  const loading = data.loadingPatterns || {};
+  const empty = data.emptyStatePatterns || {};
+  if (loading.spinners > 0 || loading.skeletons > 0 || empty.found > 0) {
+    ln("## 24. Loading & State Patterns");
+    ln();
+    if (loading.spinners > 0 || loading.skeletons > 0) {
+      ln(`### Loading`);
+      if (loading.spinners) ln(`- Spinners: ${loading.spinners}`);
+      if (loading.skeletons) ln(`- Skeletons: ${loading.skeletons}`);
+      if (loading.shimmer) ln(`- Shimmer effect: yes`);
+      if (loading.progressBars) ln(`- Progress bars: ${loading.progressBars}`);
+      if (loading.lazyImages) ln(`- Lazy-loaded images: ${loading.lazyImages}`);
+      ln();
+    }
+    if (empty.found > 0) {
+      ln(`### Empty States`);
+      ln(`- Found: ${empty.found}`);
+      ln(`- Has illustration: ${empty.hasIllustration ? "yes" : "no"}, Has action: ${empty.hasAction ? "yes" : "no"}`);
+      ln();
+    }
+  }
+
+  // ═══ SECTION 25: SEARCH & FILTERING ═══════════════════════════
+  const search = data.searchDeep || {};
+  const filters = data.filterSortPatterns || {};
+  if (search.found || filters.hasFilters) {
+    ln("## 25. Search & Filtering");
+    ln();
+    if (search.found) {
+      ln(`### Search`);
+      ln(`- Type: ${search.type}, Position: ${search.position}`);
+      if (search.placeholder) ln(`- Placeholder: "${esc(search.placeholder)}"`);
+      ln(`- Autocomplete: ${search.hasAutocomplete ? "yes" : "no"}, Expandable: ${search.expandable ? "yes" : "no"}`);
+      ln();
+    }
+    if (filters.hasFilters) {
+      ln(`### Filters`);
+      ln(`- Count: ${filters.filterCount}, Layout: ${filters.layout}`);
+      ln(`- Types: ${filters.filterTypes.join(", ") || "unknown"}`);
+      ln(`- Sorting: ${filters.hasSorting ? "yes" : "no"}, Reset: ${filters.hasReset ? "yes" : "no"}`);
+      ln();
+    }
+  }
+
+  // ═══ SECTION 26: SOCIAL PROOF ═════════════════════════════════
+  const testimonials = data.testimonialPatterns || {};
+  const faq = data.faqPatterns || {};
+  if (testimonials.found > 0 || faq.found) {
+    ln("## 26. Social Proof & FAQ");
+    ln();
+    if (testimonials.found > 0) {
+      ln(`### Testimonials`);
+      ln(`- Found: ${testimonials.found}, Layout: ${testimonials.layout}`);
+      ln(`- Avatar: ${testimonials.hasAvatar ? "yes" : "no"}, Name: ${testimonials.hasName ? "yes" : "no"}, Role: ${testimonials.hasRole ? "yes" : "no"}`);
+      ln(`- Rating: ${testimonials.hasRating ? "yes" : "no"}, Carousel: ${testimonials.isCarousel ? "yes" : "no"}`);
+      ln();
+    }
+    if (faq.found) {
+      ln(`### FAQ`);
+      ln(`- Items: ${faq.count}, Type: ${faq.type}`);
+      ln(`- Schema markup: ${faq.hasSchema ? "yes" : "no"}, Searchable: ${faq.searchable ? "yes" : "no"}`);
+      ln();
+    }
+  }
+
+  // ═══ SECTION 27: CODE DISPLAY ═════════════════════════════════
+  const codeBlocks = data.codeBlockPatterns || {};
+  if (codeBlocks.found > 0) {
+    ln("## 27. Code Display");
+    ln();
+    ln(`- Code blocks: ${codeBlocks.found}`);
+    ln(`- Syntax highlighting: ${codeBlocks.hasSyntaxHighlighting ? "yes" : "no"}`);
+    ln(`- Copy button: ${codeBlocks.hasCopyButton ? "yes" : "no"}`);
+    ln(`- Line numbers: ${codeBlocks.hasLineNumbers ? "yes" : "no"}`);
+    ln(`- Theme: ${codeBlocks.theme}`);
+    if (codeBlocks.languages.length) ln(`- Languages: ${codeBlocks.languages.join(", ")}`);
+    ln();
+  }
+
+  // ═══ SECTION 28: SECURITY & PWA ═══════════════════════════════
+  const sec = data.securitySignals || {};
+  const pwa = data.pwaCapabilities || {};
+  ln("## 28. Security & PWA");
+  ln();
+  ln(`### Security`);
+  ln(`- HTTPS: ${sec.https ? "yes" : "no"}`);
+  if (sec.mixedContent) ln(`- ⚠️ Mixed content detected`);
+  if (sec.csp) ln(`- Content Security Policy: yes`);
+  ln(`- SRI scripts: ${sec.sri || 0}`);
+  ln(`- noopener links: ${sec.noopener || 0}`);
+  if (sec.formSecurity?.csrf) ln(`- CSRF tokens: yes`);
+  ln();
+  if (pwa.hasManifest || pwa.hasServiceWorker) {
+    ln(`### PWA`);
+    ln(`- Manifest: ${pwa.hasManifest ? "yes" : "no"}`);
+    ln(`- Service Worker: ${pwa.hasServiceWorker ? "yes" : "no"}`);
+    ln(`- Installable: ${pwa.isInstallable ? "yes" : "no"}`);
+    if (pwa.themeColor) ln(`- Theme color: ${pwa.themeColor}`);
+    ln(`- Icons: ${pwa.icons}`);
+    ln();
+  }
+
+  // ═══ SECTION 29: ABOVE THE FOLD ═══════════════════════════════
+  const af = data.aboveFold || {};
+  if (af.elements > 0) {
+    ln("## 29. Above the Fold");
+    ln();
+    if (af.headline) ln(`- Headline: "${esc(af.headline.slice(0, 80))}"`);
+    if (af.primaryCTA) ln(`- Primary CTA: "${esc(af.primaryCTA)}"`);
+    ln(`- CTAs above fold: ${af.ctaCount}`);
+    ln(`- Images above fold: ${af.images}`);
+    ln(`- Hero section: ${af.hasHero ? "yes" : "no"}`);
+    ln(`- Render-blocking resources: ${af.loadingBlocked || 0}`);
+    ln();
+  }
+
+  // ═══ SECTION 30: INTELLIGENCE REPORT ══════════════════════════
+  const intel = data.intelligence || {};
+  ln("## 30. Intelligence Report");
+  ln();
+
+  // CRO
+  const cro = intel.croAudit || {};
+  if (cro.score !== undefined) {
+    ln(`### CRO Audit: ${cro.grade} (${cro.score}/100)`);
+    for (const issue of (cro.issues || []).slice(0, 5)) {
+      ln(`- [${issue.severity}] ${issue.issue} → ${issue.fix}`);
+    }
+    ln();
+  }
+
+  // Mobile UX
+  const mobile = intel.mobileUX || {};
+  if (mobile.score !== undefined) {
+    ln(`### Mobile UX: ${mobile.grade} (${mobile.score}/100)`);
+    for (const issue of (mobile.issues || []).slice(0, 5)) {
+      ln(`- [${issue.severity}] ${issue.issue}`);
+    }
+    ln();
+  }
+
+  // Design System Maturity
+  const dsm = intel.designSystemMaturity || {};
+  if (dsm.score !== undefined) {
+    ln(`### Design System Maturity: ${dsm.level} (${dsm.score}/100)`);
+    for (const s of (dsm.signals || []).slice(0, 5)) {
+      ln(`- ${s}`);
+    }
+    ln();
+  }
+
+  // Brand Consistency
+  const brand = intel.brandConsistency || {};
+  if (brand.score !== undefined) {
+    ln(`### Brand Consistency: ${brand.grade} (${brand.score}/100)`);
+    for (const s of (brand.signals || []).slice(0, 5)) {
+      ln(`- ${s}`);
+    }
+    ln();
+  }
+
+  // Info Hierarchy
+  const hier = intel.infoHierarchy || {};
+  if (hier.score !== undefined) {
+    ln(`### Information Hierarchy: ${hier.grade} (${hier.score}/100)`);
+    for (const issue of (hier.issues || []).slice(0, 5)) {
+      ln(`- ${issue}`);
+    }
+    ln();
+  }
+
+  // PLG Patterns
+  const plg = intel.plgPatterns || {};
+  if (plg.score !== undefined) {
+    ln(`### GTM Motion: ${plg.motion} (${plg.score}/100)`);
+    for (const s of (plg.signals || []).slice(0, 5)) {
+      ln(`- ${s}`);
+    }
+    ln();
+  }
+
+  // Enterprise Readiness
+  const ent = intel.enterpriseReadiness || {};
+  if (ent.score !== undefined) {
+    ln(`### Enterprise Readiness: ${ent.level} (${ent.score}/100)`);
+    for (const s of (ent.signals || []).slice(0, 5)) {
+      ln(`- ${s}`);
+    }
+    ln();
+  }
+
+  // Design Trends
+  const trends = intel.designTrends || {};
+  if (trends.count > 0) {
+    ln(`### Design Trends Detected`);
+    for (const t of trends.trends) {
+      ln(`- **${t.trend}** (${t.confidence}) — ${t.description}`);
+    }
+    ln();
+  }
+
+  // i18n
+  const i18n = data.i18nSignals || {};
+  if (i18n.lang || i18n.hasLangSwitcher) {
+    ln(`### Internationalization`);
+    ln(`- Language: ${i18n.lang || "not set"}, Direction: ${i18n.dir || "ltr"}`);
+    if (i18n.hasLangSwitcher) ln(`- Language switcher: yes`);
+    if (i18n.alternateLanguages.length) ln(`- Alternate languages: ${i18n.alternateLanguages.join(", ")}`);
+    if (i18n.rtlSupport) ln(`- RTL support: yes`);
+    ln();
+  }
+
+  // Whitespace
+  const ws = data.whitespaceRhythm || {};
+  if (ws.baseUnit > 0) {
+    ln(`### Whitespace Rhythm`);
+    ln(`- Base unit: ${ws.baseUnit}px`);
+    ln(`- Grid consistency: ${ws.consistency}%`);
+    ln(`- Vertical rhythm: ${ws.verticalRhythm ? "yes" : "no"}`);
+    if (ws.sectionGaps.length) ln(`- Section gaps: ${ws.sectionGaps.join("px, ")}px`);
+    ln();
+  }
+
   return l.join("\n");
 }
 

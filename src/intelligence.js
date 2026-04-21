@@ -511,6 +511,184 @@ export function analyzeFunnel(data) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ENGINE 12: CRO AUDIT
+// ═══════════════════════════════════════════════════════════════
+
+export function auditCRO(data) {
+  const issues = [];
+  const af = data.aboveFold || {};
+  if (!af.primaryCTA) issues.push({ severity: "high", issue: "No CTA above the fold", fix: "Add a clear primary CTA" });
+  if (af.ctaCount > 3) issues.push({ severity: "medium", issue: "Too many CTAs above fold", fix: "Reduce to 1-2 CTAs" });
+  if (!af.headline) issues.push({ severity: "high", issue: "No headline above the fold", fix: "Add a value proposition headline" });
+  const testimonials = data.testimonialPatterns || {};
+  if (!testimonials.found) issues.push({ severity: "medium", issue: "No testimonials detected", fix: "Add customer testimonials" });
+  if (data.formDeep?.avgFields > 5) issues.push({ severity: "medium", issue: "High-friction forms", fix: "Reduce form fields" });
+  if (!data.securitySignals?.https) issues.push({ severity: "high", issue: "Not HTTPS", fix: "Enable HTTPS" });
+  const score = Math.max(0, 100 - issues.filter(i => i.severity === "high").length * 20 - issues.filter(i => i.severity === "medium").length * 10 - issues.filter(i => i.severity === "low").length * 5);
+  return { score, issues, grade: score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : "D" };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENGINE 13: MOBILE UX
+// ═══════════════════════════════════════════════════════════════
+
+export function assessMobileUX(data) {
+  const issues = [];
+  const identity = data.identity || {};
+  if (!identity.viewport || !identity.viewport.includes("width=device-width")) issues.push({ severity: "high", issue: "No responsive viewport meta tag", fix: "Add viewport meta" });
+  const bp = data.breakpointList || [];
+  if (bp.length === 0) issues.push({ severity: "high", issue: "No breakpoints detected", fix: "Add responsive breakpoints" });
+  const score = Math.max(0, 100 - issues.filter(i => i.severity === "high").length * 25 - issues.filter(i => i.severity === "medium").length * 12);
+  return { score, issues, grade: score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : "D" };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENGINE 14: DESIGN SYSTEM MATURITY
+// ═══════════════════════════════════════════════════════════════
+
+export function scoreDesignSystemMaturity(data) {
+  let score = 0;
+  const signals = [];
+  const cssVars = data.cssVars || {};
+  const varCount = Object.keys(cssVars).length;
+  if (varCount > 50) { score += 25; signals.push("Extensive CSS custom properties"); }
+  else if (varCount > 20) { score += 15; signals.push("Moderate CSS custom properties"); }
+  else if (varCount > 5) { score += 8; signals.push("Some CSS custom properties"); }
+  else signals.push("Few CSS custom properties");
+  const wr = data.whitespaceRhythm || {};
+  if (wr.consistency > 80) { score += 20; signals.push("Consistent spacing rhythm"); }
+  else if (wr.consistency > 50) { score += 12; signals.push("Moderate spacing consistency"); }
+  else { score += 4; signals.push("Inconsistent spacing"); }
+  const fontSizes = Object.keys(data.visual?.maps?.fontSize || {}).length;
+  if (fontSizes >= 4 && fontSizes <= 8) { score += 15; signals.push("Clean type scale"); }
+  else if (fontSizes <= 12) { score += 8; signals.push("Slightly loose type scale"); }
+  else { score += 3; signals.push("Inconsistent type scale"); }
+  const colors = (data.designSystem?.colors || []).length;
+  if (colors >= 3 && colors <= 8) { score += 15; signals.push("Well-defined palette"); }
+  else if (colors > 8) { score += 7; signals.push("Large palette"); }
+  const buttons = data.visual?.componentData?.buttons || [];
+  const uniqueStyles = new Set(buttons.map(b => `${b.bg}-${b.radius}`)).size;
+  if (buttons.length > 0 && uniqueStyles <= 3) { score += 15; signals.push("Consistent components"); }
+  else if (uniqueStyles <= 5) { score += 8; signals.push("Mostly consistent components"); }
+  else { score += 3; signals.push("High component variation"); }
+  const level = score >= 80 ? "Mature" : score >= 60 ? "Growing" : score >= 40 ? "Emerging" : "Ad-hoc";
+  return { score, level, signals };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENGINE 15: BRAND CONSISTENCY
+// ═══════════════════════════════════════════════════════════════
+
+export function analyzeBrandConsistency(data) {
+  let score = 0;
+  const signals = [];
+  const identity = data.identity || {};
+  if (identity.favicon) { score += 10; signals.push("Favicon present"); }
+  if (identity.appleTouchIcon) { score += 5; signals.push("Apple touch icon"); }
+  if (identity.themeColor) { score += 10; signals.push("Theme color defined"); }
+  if (identity.ogImage) { score += 10; signals.push("OG image configured"); }
+  const voice = data.brandVoice || {};
+  if (voice.personality && voice.personality.length >= 2) { score += 15; signals.push("Distinct voice personality"); }
+  const social = data.socialLinks || {};
+  const socialCount = Object.values(social).filter(v => v && v !== "none").length;
+  if (socialCount >= 3) { score += 10; signals.push("Strong social presence"); }
+  else if (socialCount >= 1) { score += 5; signals.push("Some social presence"); }
+  if (data.schemaData?.types?.length > 0) { score += 10; signals.push("Structured data present"); }
+  if (identity.ogSiteName && identity.title?.includes(identity.ogSiteName)) { score += 15; signals.push("Consistent brand name"); }
+  return { score: Math.min(100, score), signals, grade: score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : "D" };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENGINE 16: INFORMATION HIERARCHY
+// ═══════════════════════════════════════════════════════════════
+
+export function assessInfoHierarchy(data) {
+  const issues = [];
+  let score = 100;
+  const content = data.content || {};
+  const headingLevels = content.headings || {};
+  const h1Count = headingLevels.h1 || 0;
+  if (h1Count === 0) { issues.push("No H1 found"); score -= 20; }
+  else if (h1Count > 1) { issues.push("Multiple H1 tags"); score -= 10; }
+  if ((headingLevels.h3 || 0) > 0 && !(headingLevels.h2 || 0)) { issues.push("Skipped heading level"); score -= 15; }
+  const arch = data.architecture || {};
+  if ((arch.sections || []).length === 0) { issues.push("No semantic sections"); score -= 10; }
+  const bc = data.breadcrumbPatterns || {};
+  const nav = data.navDeep || {};
+  if ((nav.maxDepth || 0) > 2 && !bc.found) { issues.push("Deep nav without breadcrumbs"); score -= 10; }
+  return { score: Math.max(0, score), issues, grade: score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : "D" };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENGINE 17: PLG DETECTION
+// ═══════════════════════════════════════════════════════════════
+
+export function detectPLGPatterns(data) {
+  const signals = [];
+  let score = 0;
+  const pricing = data.pricingData || {};
+  if (pricing.detected) {
+    const priceTexts = (pricing.plans || pricing.tiers || []).map(p => (p.price || "").toLowerCase());
+    if (priceTexts.some(p => p.includes("free") || p.includes("$0"))) { score += 20; signals.push("Free tier detected"); }
+  }
+  const af = data.aboveFold || {};
+  const cta = (af.primaryCTA || "").toLowerCase();
+  if (cta.includes("try") || cta.includes("start") || cta.includes("sign up")) { score += 15; signals.push("PLG CTA: " + (af.primaryCTA || "")); }
+  else if (cta.includes("demo") || cta.includes("contact")) { score += 5; signals.push("Sales-led CTA"); }
+  const bodyText = (data.content?.bodyText || "").toLowerCase();
+  if (bodyText.includes("no credit card")) { score += 10; signals.push("No credit card messaging"); }
+  const forms = data.formDeep || {};
+  if (forms.totalForms > 0 && (forms.avgFields || 10) <= 3) { score += 15; signals.push("Low-friction signup"); }
+  const motion = score >= 70 ? "Strong PLG" : score >= 40 ? "PLG-leaning" : score >= 20 ? "Hybrid" : "Sales-led";
+  return { score: Math.min(100, score), motion, signals };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENGINE 18: ENTERPRISE READINESS
+// ═══════════════════════════════════════════════════════════════
+
+export function assessEnterpriseReadiness(data) {
+  let score = 0;
+  const signals = [];
+  const sec = data.securitySignals || {};
+  if (sec.https) { score += 10; signals.push("HTTPS enabled"); }
+  if (sec.csp) { score += 5; signals.push("CSP detected"); }
+  const cookie = data.cookieConsent || {};
+  if (cookie.bannerFound) { score += 10; signals.push("Cookie consent present"); }
+  const pricing = data.pricingData || {};
+  if (pricing.detected) {
+    const plans = (pricing.plans || pricing.tiers || []).map(p => (p.name || "").toLowerCase());
+    if (plans.some(p => p.includes("enterprise") || p.includes("business"))) { score += 15; signals.push("Enterprise tier"); }
+    if (plans.some(p => p.includes("custom") || p.includes("contact"))) { score += 10; signals.push("Custom pricing"); }
+  }
+  const allLinks = [...(data.architecture?.navLinks || []), ...(data.architecture?.footerLinks || [])].map(l => (l.text || "").toLowerCase());
+  const compliance = ["security", "privacy", "terms", "gdpr", "soc", "compliance", "trust"].filter(t => allLinks.some(l => l.includes(t)));
+  if (compliance.length >= 3) { score += 15; signals.push("Compliance pages: " + compliance.join(", ")); }
+  else if (compliance.length >= 1) { score += 7; signals.push("Some compliance: " + compliance.join(", ")); }
+  const level = score >= 70 ? "Enterprise-ready" : score >= 45 ? "Growth-stage" : score >= 20 ? "Early-stage" : "Consumer-focused";
+  return { score: Math.min(100, score), level, signals };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENGINE 19: DESIGN TRENDS
+// ═══════════════════════════════════════════════════════════════
+
+export function detectDesignTrends(data) {
+  const trends = [];
+  const visual = data.visual || {};
+  if (data.darkMode?.detected) trends.push({ trend: "Dark Mode", confidence: "high", description: "Dark color scheme support" });
+  if ((data.gradientList || []).length > 0) trends.push({ trend: "Gradient Design", confidence: "medium", description: "Gradient backgrounds or text" });
+  const mi = data.microInteractions || {};
+  if (mi.transitionElements > 10) trends.push({ trend: "Micro-animations", confidence: "high", description: "Extensive transitions" });
+  if (mi.scrollAnimations > 0) trends.push({ trend: "Scroll Animations", confidence: "high", description: "Scroll-triggered content" });
+  const ds = data.designSystem || {};
+  if ((ds.colors || []).length <= 4 && (ds.fonts || []).length <= 2) trends.push({ trend: "Minimalist", confidence: "medium", description: "Restrained palette and type" });
+  const largeType = Object.entries(visual.maps?.fontSize || {}).filter(([s]) => parseInt(s) >= 48).length;
+  if (largeType > 0) trends.push({ trend: "Large Typography", confidence: "medium", description: "Oversized headings" });
+  return { trends, count: trends.length };
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MASTER INTELLIGENCE FUNCTION
 // ═══════════════════════════════════════════════════════════════
 
@@ -527,5 +705,13 @@ export function generateIntelligence(data) {
     accessibilityGrade: gradeAccessibility(data),
     productMaturity: estimateMaturity(data),
     conversionFunnel: analyzeFunnel(data),
+    croAudit: auditCRO(data),
+    mobileUX: assessMobileUX(data),
+    designSystemMaturity: scoreDesignSystemMaturity(data),
+    brandConsistency: analyzeBrandConsistency(data),
+    infoHierarchy: assessInfoHierarchy(data),
+    plgPatterns: detectPLGPatterns(data),
+    enterpriseReadiness: assessEnterpriseReadiness(data),
+    designTrends: detectDesignTrends(data),
   };
 }

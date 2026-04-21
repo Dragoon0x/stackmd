@@ -122,10 +122,10 @@
 <div class="hero">
   <h1>
     <span class="accent">Full product DNA. One file.</span>
-    <span class="dim">Voice, UX, content, architecture, behavior, performance, tech stack. 36 extraction passes. 200+ data points.</span>
+    <span class="dim">Voice, UX, content, architecture, behavior, performance, tech stack. 64 extraction passes. 20 intelligence engines. 500+ data points.</span>
   </h1>
   <p class="sub">
-    stackmd crawls any URL and extracts the full product DNA: brand voice, UX patterns, content strategy, visual design, information architecture, component behavior, SEO structure, and technology stack. 36 extraction passes. 200+ data points. 20 structured sections. Everything an AI agent needs to rebuild a product that works, feels, and thinks like the original.
+    stackmd crawls any URL and extracts the full product DNA: brand voice, UX patterns, content strategy, visual design, information architecture, component behavior, SEO structure, and technology stack. 64 extraction passes. 20 intelligence engines. 500+ data points. 20 structured sections. Everything an AI agent needs to rebuild a product that works, feels, and thinks like the original.
   </p>
   <div class="install-block" onclick="copyCmd(this)">
     <span class="p">$</span>
@@ -152,13 +152,15 @@
       <div class="tl">  <span class="d">18 colors · 3 fonts · 5 components · 8 UX patterns</span></div>
       <div class="tl">  <span class="d">Voice:</span> <span class="lbl">technical, warm, accessible</span> <span class="d">· Page:</span> <span class="lbl">landing</span> <span class="d">· Score:</span> <span class="ok">78/100</span></div>
       <div class="tl">  <span class="d">Stack: React, Next.js + Tailwind CSS</span></div>
+      <div class="tl">  <span class="d">Intel:</span> <span style="color:var(--blue)">CRO:A · Mobile:A · DS:Growing · GTM:Strong PLG · Ent:Growth-stage</span></div>
+      <div class="tl">  <span class="d">64 extraction passes · 20 intelligence engines</span></div>
     </div>
   </div>
 </section>
 
 <!-- 15 SECTIONS -->
 <section id="what" class="fade-in">
-  <h2>20 sections of product DNA · 36 extraction passes</h2>
+  <h2>30 sections of product DNA · 64 extraction passes · 20 intelligence engines</h2>
   <p>Every STACK.md captures the complete picture. Here's what each section gives an AI agent.</p>
   <div class="dna-grid">
     <div class="dna-card"><div class="num">01</div><div class="title">Product Identity</div><div class="desc">Name, tagline, page type, frameworks, personality</div></div>
@@ -181,6 +183,16 @@
     <div class="dna-card"><div class="num">18</div><div class="title">Structured Data</div><div class="desc">JSON-LD, microdata, OpenGraph, Twitter Cards</div></div>
     <div class="dna-card"><div class="num">19</div><div class="title">Deep Report</div><div class="desc">Typography, color, layout, forms, media, nav, a11y, perf, content metrics</div></div>
     <div class="dna-card"><div class="num">20</div><div class="title">Agent Guide</div><div class="desc">Full prompt: identity + visual + voice + UX</div></div>
+    <div class="dna-card" style="border-color:var(--accent-border)"><div class="num" style="color:var(--accent)">21</div><div class="title">Cookie & Consent</div><div class="desc">Banner type, compliance, dark pattern detection</div></div>
+    <div class="dna-card" style="border-color:var(--accent-border)"><div class="num" style="color:var(--accent)">22</div><div class="title">UI Patterns</div><div class="desc">Tabs, accordions, breadcrumbs, pagination, timelines</div></div>
+    <div class="dna-card" style="border-color:var(--accent-border)"><div class="num" style="color:var(--accent)">23</div><div class="title">Data Display</div><div class="desc">Tables, card variants, sortable, responsive</div></div>
+    <div class="dna-card" style="border-color:var(--accent-border)"><div class="num" style="color:var(--accent)">24</div><div class="title">Loading States</div><div class="desc">Spinners, skeletons, shimmer, empty states</div></div>
+    <div class="dna-card" style="border-color:var(--accent-border)"><div class="num" style="color:var(--accent)">25</div><div class="title">Search & Filter</div><div class="desc">Autocomplete, filter types, sort UI</div></div>
+    <div class="dna-card" style="border-color:var(--accent-border)"><div class="num" style="color:var(--accent)">26</div><div class="title">Social Proof</div><div class="desc">Testimonials, ratings, FAQ schema</div></div>
+    <div class="dna-card" style="border-color:var(--accent-border)"><div class="num" style="color:var(--accent)">27</div><div class="title">Code Display</div><div class="desc">Syntax highlighting, copy, themes, languages</div></div>
+    <div class="dna-card" style="border-color:var(--accent-border)"><div class="num" style="color:var(--accent)">28</div><div class="title">Security & PWA</div><div class="desc">HTTPS, CSP, SRI, service worker, manifest</div></div>
+    <div class="dna-card" style="border-color:var(--accent-border)"><div class="num" style="color:var(--accent)">29</div><div class="title">Above the Fold</div><div class="desc">Headline, CTA, hero, render-blocking</div></div>
+    <div class="dna-card" style="border-color:var(--accent-border)"><div class="num" style="color:var(--accent)">30</div><div class="title">Intelligence</div><div class="desc">CRO, mobile UX, design maturity, PLG, enterprise</div></div>
   </div>
 </section>
 
@@ -226,6 +238,8 @@
       <tr><td><code>-o, --output</code></td><td>Output file path</td><td><code>./STACK.md</code></td></tr>
       <tr><td><code>--json</code></td><td>Output raw data as JSON</td><td><code>false</code></td></tr>
       <tr><td><code>--dark</code></td><td>Extract dark mode tokens</td><td><code>false</code></td></tr>
+      <tr><td><code>--html</code></td><td>Output visual HTML report</td><td><code>false</code></td></tr>
+      <tr><td><code>--compare &lt;url&gt;</code></td><td>Compare with another URL</td><td>—</td></tr>
       <tr><td><code>--wait &lt;ms&gt;</code></td><td>Wait time for dynamic content</td><td><code>3000</code></td></tr>
     </tbody>
   </table>
@@ -246,7 +260,11 @@ result.data.designSystem           <span class="cmt">// colors, fonts, spacing, 
 result.data.techStack              <span class="cmt">// React, Next.js, Tailwind, analytics</span>
 result.data.architecture           <span class="cmt">// navLinks, sections, footerLinks</span>
 result.data.behavior               <span class="cmt">// modals, tooltips, validation</span>
-result.data.dnaScore               <span class="cmt">// 0-100 across 10 dimensions</span></pre>
+result.data.dnaScore               <span class="cmt">// 0-100 across 10 dimensions</span>
+result.data.intelligence           <span class="cmt">// CRO audit, mobile UX, PLG detection</span>
+result.data.cookieConsent          <span class="cmt">// consent banner, compliance, dark patterns</span>
+result.data.securitySignals        <span class="cmt">// HTTPS, CSP, SRI, CSRF</span>
+result.data.aboveFold              <span class="cmt">// headline, CTA, hero analysis</span></pre>
   </div>
 </section>
 

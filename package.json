@@ -1,7 +1,7 @@
 {
   "name": "stackmd",
-  "version": "0.1.0",
-  "description": "Extract full product DNA from any live URL into a STACK.md file",
+  "version": "0.2.0",
+  "description": "Extract full product DNA from any live URL. 64 extraction passes. 19 intelligence engines. Brand voice, UX patterns, content strategy, visual design, accessibility, SEO, performance, tech stack, CRO audit, design system maturity, enterprise readiness.",
   "type": "module",
   "bin": {
     "stackmd": "./bin/stackmd.js"

@@ -6,13 +6,13 @@ Extract full product DNA from any live URL into a single STACK.md file.
 npx stackmd https://example.com
 ```
 
-stackmd crawls any URL and extracts the full product DNA: brand voice, UX patterns, content strategy, visual design, information architecture, component behavior, SEO structure, performance signals, and technology stack. 36 extraction passes. 200+ data points. Everything an AI agent needs to rebuild a product that works, feels, and thinks like the original.
+stackmd crawls any URL and extracts the full product DNA: brand voice, UX patterns, content strategy, visual design, information architecture, component behavior, SEO structure, performance signals, and technology stack. 64 extraction passes. 20 intelligence engines. 30 output sections. 138 tests. Everything an AI agent needs to rebuild a product that works, feels, and thinks like the original.
 
 > **This project is for educational and experimental purposes only.** It reads publicly visible computed styles, content, and structure from rendered web pages. No ownership of any product identity is claimed. See [Disclaimer](#disclaimer).
 
 ## What it extracts
 
-STACK.md covers 15 sections. Every section gives an AI coding agent real context, not just tokens.
+STACK.md covers 30 sections. Every section gives an AI coding agent real context, not just tokens.
 
 | # | Section | What it captures |
 |---|---------|-----------------|
@@ -30,7 +30,28 @@ STACK.md covers 15 sections. Every section gives an AI coding agent real context
 | 12 | Accessibility Profile | WCAG contrast, heading order, landmarks, ARIA, focus, reduced motion |
 | 13 | SEO & Performance | Title, meta, structured data, Open Graph, DOM nodes, lazy loading |
 | 14 | Technology Stack | React/Next/Vue/Angular/Svelte, Tailwind/Bootstrap, analytics, hosting |
-| 15 | Agent Build Guide | Quick reference + full structured prompt with identity, visual, voice, and UX |
+| 15 | Icons & Media | Icon system, image treatments, font loading, gradients |
+| 16-20 | Deep Extraction | Typography, color context, layout, forms, navigation deep analysis |
+| 21 | Cookie & Consent | Banner type, position, compliance, dark pattern detection |
+| 22 | UI Component Patterns | Tabs, accordions, breadcrumbs, pagination, timelines, steppers |
+| 23 | Data Display | Tables, card variants, sortable/filterable, responsive |
+| 24 | Loading & State | Spinners, skeletons, shimmer, empty states, progress indicators |
+| 25 | Search & Filtering | Search type, autocomplete, filter controls, sort UI |
+| 26 | Social Proof & FAQ | Testimonials, ratings, FAQ schema, accordion types |
+| 27 | Code Display | Syntax highlighting, copy buttons, themes, languages |
+| 28 | Security & PWA | HTTPS, CSP, SRI, service worker, manifest, installability |
+| 29 | Above the Fold | Headline, primary CTA, hero section, render-blocking resources |
+| 30 | Intelligence Report | CRO audit, mobile UX, design system maturity, brand consistency, PLG, enterprise readiness, design trends |
+
+## New in v0.2.0
+
+- **64 extraction passes** (was 36)
+- **20 intelligence engines** (was 11) — CRO audit, mobile UX, design system maturity, brand consistency, info hierarchy, PLG detection, enterprise readiness, design trends
+- **30 STACK.md sections** (was 15)
+- **138 tests** (was 117)
+- **`--html` flag** — visual HTML report with dark theme
+- **`--compare <url>` flag** — side-by-side comparison of two URLs
+- **6,342 lines of code** (was 4,386)
 
 ## How it works
 
